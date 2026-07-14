@@ -1,7 +1,22 @@
 import { allStations } from "@neaps/tide-database";
-import { mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdir, writeFile, rm, readFile } from "node:fs/promises";
 
 const REGION_CONTINENT = "Europe"; // change to expand coverage
+const CACHE_MANIFEST_PATH = new URL("../src/cache-manifest.js", import.meta.url);
+
+// Rewrites the CACHE_VERSION constant in src/cache-manifest.js to a fresh build stamp
+// (station count + build date) so the sw.js runtime data cache auto-invalidates whenever
+// the dataset is regenerated. Leaves CACHE_ASSETS untouched.
+export function stampCacheVersion(source, stationCount, date = new Date()) {
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const version = `v${stationCount}-${yyyy}${mm}${dd}`;
+  return source.replace(
+    /export const CACHE_VERSION = ".*?";/,
+    `export const CACHE_VERSION = "${version}";`
+  );
+}
 
 export function isCommercialSafe(license) {
   if (license == null) return true; // e.g. NOAA public domain
@@ -47,6 +62,10 @@ async function build() {
     `Stations bundled: ${kept.length} (European, commercial-use-safe only).\n` +
     `Licenses present: ${[...sources].join(", ")}.\n`;
   await writeFile("DATA-SOURCES.md", attribution);
+
+  const manifestSource = await readFile(CACHE_MANIFEST_PATH, "utf8");
+  const stamped = stampCacheVersion(manifestSource, kept.length);
+  await writeFile(CACHE_MANIFEST_PATH, stamped);
 
   console.log(`Wrote ${kept.length} stations to data/`);
 }
