@@ -4,11 +4,14 @@
 Offline-first tide predictor, evolved from a single-location (Baltimore, Co. Cork) GitHub Pages app
 into a global tide predictor. Static site, no backend, installable as a PWA.
 
-**Current phase**: Phase 1 (global predictor) implemented — engine extraction, NC-filtered European
-data build, nearest-gauge location/search, offline resolver with optional API refinement, opt-in
-secondary-port correction, and formatting/UI wiring are all landed on `index.html` + `src/`. Full
-task-by-task plan: `docs/superpowers/plans/2026-07-14-global-tide-predictor.md`. Remaining from that
-plan: PWA manifest + offline service worker, and final full-suite/live verification.
+**Current phase**: Phase 1 (global predictor) is complete and verified — engine extraction, NC-filtered
+European data build, nearest-gauge location/search, offline resolver with optional API refinement,
+opt-in secondary-port correction, formatting/UI wiring, an installable PWA manifest + offline service
+worker (stale-while-revalidate app shell, cache-first station data), multi-day views (1/3/5/7/10
+station-local days), a browse-by-country dropdown with scoped search, and country auto-default (from
+geolocation, or from the last-saved station on reload) are all landed on `index.html` + `src/`, with
+the full test suite passing and the app live-verified. Full task-by-task plan:
+`docs/superpowers/plans/2026-07-14-global-tide-predictor.md` — fully executed, nothing outstanding.
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: architecture -->
@@ -19,8 +22,8 @@ plan: PWA manifest + offline service worker, and final full-suite/live verificat
 - `src/resolver.js` — `getTides(station, range, apiConfig)`: offline harmonic prediction by default; optional online API refinement (`apiConfig.fetchExtremes`) attempted only when `navigator.onLine`, with silent fallback to offline on any error
 - `src/location.js` — `haversineKm`, `nearestStation`, `searchStations`, and `detectLocation` (isolates the browser geolocation API in one unit for the future Capacitor wrap)
 - `src/correction.js` — `applyCorrection(tides, correction)`: opt-in secondary-port time-offset correction for a saved "home spot"; passthrough when `correction` is null/undefined
-- `src/format.js` — `fmtTime(date, timezone)` (via `Intl`, never hardcode a timezone) and `fmtDistance(km)`
-- `src/ui.js` — DOM orchestration only: `init()`, `showStation`, `renderHeader`, `renderTides`, `wireSearch`, `useMyLocation`; persists last-selected station in `localStorage` (`rwb.selectedStationId`)
+- `src/format.js` — `fmtTime(date, timezone)` and `fmtDistance(km)` (via `Intl`, never hardcode a timezone); `localDayISO(date, timezone)`, `groupByLocalDay(tides, timezone)`, and `fmtDayLabel(isoDay, timezone)` group/label tides by station-local calendar day (timezone-aware across UTC midnight)
+- `src/ui.js` — DOM orchestration only: `init()`, `showStation`, `renderHeader`, `renderDays`, `wireSearch`, `wireCountryFilter`, `wireDayCount`, `useMyLocation`; persists last-selected station (`rwb.selectedStationId`) and day-count choice (`rwb.days`, one of 1/3/5/7/10) in `localStorage`; `#country-filter` scopes search to one country and auto-sets to the resolved/saved station's own country (offline "detected country", no reverse-geocoding)
 - `data/stations.json` + `data/stations/<id>.json` — station index + per-station constituents/datums/license
 - `scripts/build-data.mjs` — regenerates `data/` from `@neaps/tide-database`; exports `isCommercialSafe(license)` and `inRegion(station)`; **excludes any CC-BY-NC-licensed station** (commercial-use safety for future monetization); region currently limited to `continent === "Europe"`
 - `test/` — Node-based headless tests (`node --test`), one test file per `src/` module + `build-data`
