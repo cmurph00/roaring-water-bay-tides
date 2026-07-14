@@ -7,14 +7,20 @@ import {
 } from "./location.js";
 import { getTides } from "./resolver.js";
 import { applyCorrection } from "./correction.js";
-import { fmtTime, fmtDistance } from "./format.js";
+import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from "./format.js";
 
 const INDEX_URL = "./data/stations.json";
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const LS_KEY = "rwb.selectedStationId";
+const LS_DAYS_KEY = "rwb.days";
+const VALID_DAY_COUNTS = [1, 3, 5, 7, 10];
+const DEFAULT_DAY_COUNT = 3;
 const MAX_RESULTS = 50;
 
 let index = [];
+// The currently-selected station (entry + distance), kept so the day-count
+// control can re-render without re-running search/geolocation/selection.
+let currentSelection = null;
 
 async function loadIndex() {
   index = await fetch(INDEX_URL).then((r) => r.json());
@@ -27,16 +33,26 @@ async function loadStation(id) {
 async function showStation(entry, distanceKm) {
   localStorage.setItem(LS_KEY, entry.id);
   const station = await loadStation(entry.id);
-  // "Today" is the browser-local calendar day; switch to the station's own
-  // timezone here once date-picking/multi-timezone browsing is added, so a
-  // user near a day boundary doesn't see the wrong local day for a distant station.
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start.getTime() + 24 * 3600 * 1000 - 1);
+  currentSelection = { entry, distanceKm };
+
+  const days = getDayCount();
+  const now = new Date();
+  // Buffer a day either side so N full station-local days (including today)
+  // are covered regardless of how far the station's timezone sits from UTC.
+  const start = new Date(now.getTime() - 24 * 3600 * 1000);
+  const end = new Date(now.getTime() + (days + 1) * 24 * 3600 * 1000);
   let tides = await getTides(station, { start, end });
   tides = applyCorrection(tides, null); // home-spot correction wired later if configured
+
+  // Group in the STATION's own timezone, not the browser's, so a user near a
+  // day boundary sees the correct local days for a distant station.
+  const todayKey = localDayISO(now, station.timezone);
+  const groups = groupByLocalDay(tides, station.timezone)
+    .filter((g) => g.day >= todayKey)
+    .slice(0, days);
+
   renderHeader(entry, distanceKm, station);
-  renderTides(tides, station.timezone);
+  renderDays(groups, station.timezone);
 }
 
 function renderError(message) {
@@ -50,9 +66,7 @@ function renderHeader(entry, distanceKm, station) {
   el.textContent = `${entry.name}, ${entry.country}${dist} · heights vs ${station.chart_datum ?? "chart datum"}`;
 }
 
-function renderTides(tides, timezone) {
-  const container = document.getElementById("results");
-  container.innerHTML = "";
+function renderTideTable(tides, timezone) {
   const table = document.createElement("table");
   for (const t of tides) {
     const row = document.createElement("tr");
@@ -63,7 +77,28 @@ function renderTides(tides, timezone) {
       `<td class="height">${t.height.toFixed(2)} m</td>`;
     table.appendChild(row);
   }
-  container.appendChild(table);
+  return table;
+}
+
+function renderDays(groups, timezone) {
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+  if (!groups.length) {
+    container.innerHTML = '<div class="empty">No tide data for this range.</div>';
+    return;
+  }
+  for (const g of groups) {
+    const dayEl = document.createElement("div");
+    dayEl.className = "day";
+
+    const head = document.createElement("div");
+    head.className = "day-head";
+    head.innerHTML = `<span>${fmtDayLabel(g.day, timezone)}</span><span class="range">${g.day}</span>`;
+    dayEl.appendChild(head);
+
+    dayEl.appendChild(renderTideTable(g.tides, timezone));
+    container.appendChild(dayEl);
+  }
 }
 
 function renderStationList(stations) {
@@ -118,6 +153,27 @@ function wireCountryFilter() {
   });
 }
 
+function getDayCount() {
+  const select = document.getElementById("day-count");
+  const n = parseInt(select?.value, 10);
+  return VALID_DAY_COUNTS.includes(n) ? n : DEFAULT_DAY_COUNT;
+}
+
+function wireDayCount() {
+  const select = document.getElementById("day-count");
+  const saved = parseInt(localStorage.getItem(LS_DAYS_KEY), 10);
+  select.value = String(VALID_DAY_COUNTS.includes(saved) ? saved : DEFAULT_DAY_COUNT);
+
+  select.addEventListener("change", () => {
+    localStorage.setItem(LS_DAYS_KEY, select.value);
+    if (currentSelection) {
+      showStation(currentSelection.entry, currentSelection.distanceKm).catch(() => {
+        renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+      });
+    }
+  });
+}
+
 async function useMyLocation() {
   try {
     const { lat, lon } = await detectLocation();
@@ -132,6 +188,7 @@ export async function init() {
   await loadIndex();
   wireSearch();
   wireCountryFilter();
+  wireDayCount();
   document.getElementById("use-location").addEventListener("click", useMyLocation);
 
   const savedId = localStorage.getItem(LS_KEY);
