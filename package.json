@@ -1,0 +1,13 @@
+{
+  "name": "roaring-water-bay-tides",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "build:data": "node scripts/build-data.mjs"
+  },
+  "devDependencies": {
+    "@neaps/tide-database": "^1.0.0"
+  }
+}

@@ -1,0 +1,292 @@
+{
+  "id": "ticon/ringaskiddynmci-rin-irl-cmems",
+  "name": "Ringaskiddy NMCI",
+  "region": "Munster",
+  "country": "Ireland",
+  "continent": "Europe",
+  "latitude": 51.84,
+  "longitude": -8.304,
+  "timezone": "Europe/Dublin",
+  "source": {
+    "name": "TICON-4",
+    "url": "https://www.seanoe.org/data/00980/109129/",
+    "id": "ringaskiddynmci-rin-irl-cmems",
+    "published_harmonics": true
+  },
+  "license": {
+    "type": "cc-by-nc-4.0",
+    "commercial_use": false,
+    "url": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "notes": "Upstream GESLA data provider restricts commercial use. See https://gesla787883612.wordpress.com/license/"
+  },
+  "disclaimers": "Possible quality control issues",
+  "datums": {
+    "HAT": 2.225,
+    "MHHW": 1.448,
+    "MHW": 1.391,
+    "MSL": -0.133,
+    "MTL": -0.093,
+    "MLW": -1.577,
+    "MLLW": -1.603,
+    "LAT": -2.477
+  },
+  "datums_source": "observed",
+  "chart_datum": "LAT",
+  "type": "reference",
+  "harmonic_constituents": [
+    {
+      "name": "M2",
+      "amplitude": 1.43133907,
+      "phase": 147.04598399999998
+    },
+    {
+      "name": "N2",
+      "amplitude": 0.26582243,
+      "phase": 125.76432899999998
+    },
+    {
+      "name": "S2",
+      "amplitude": 0.44655259,
+      "phase": 192.350402
+    },
+    {
+      "name": "K2",
+      "amplitude": 0.12903921000000002,
+      "phase": 191.895113
+    },
+    {
+      "name": "2N2",
+      "amplitude": 0.03371188,
+      "phase": 106.81942700000002
+    },
+    {
+      "name": "S1",
+      "amplitude": 0.00271246,
+      "phase": 70.90531699999997
+    },
+    {
+      "name": "K1",
+      "amplitude": 0.01979562,
+      "phase": 167.05046800000002
+    },
+    {
+      "name": "P1",
+      "amplitude": 0.00498179,
+      "phase": 158.82926599999996
+    },
+    {
+      "name": "O1",
+      "amplitude": 0.03578512,
+      "phase": 44.97117700000001
+    },
+    {
+      "name": "Q1",
+      "amplitude": 0.01237034,
+      "phase": 353.805918
+    },
+    {
+      "name": "M1",
+      "amplitude": 0.00101813,
+      "phase": 185.863251
+    },
+    {
+      "name": "M4",
+      "amplitude": 0.06987418,
+      "phase": 231.90921
+    },
+    {
+      "name": "MM",
+      "amplitude": 0.013676140000000002,
+      "phase": 178.373331
+    },
+    {
+      "name": "MF",
+      "amplitude": 0.01793733,
+      "phase": 196.80001
+    },
+    {
+      "name": "SA",
+      "amplitude": 0.06226697,
+      "phase": 223.190916
+    },
+    {
+      "name": "SSA",
+      "amplitude": 0.023147989999999997,
+      "phase": 96.87699299999997
+    },
+    {
+      "name": "T2",
+      "amplitude": 0.0247158,
+      "phase": 194.194288
+    },
+    {
+      "name": "J1",
+      "amplitude": 0.0011771099999999999,
+      "phase": 45.98350499999998
+    },
+    {
+      "name": "L2",
+      "amplitude": 0.07091035,
+      "phase": 158.51268099999993
+    },
+    {
+      "name": "R2",
+      "amplitude": 0.00481657,
+      "phase": 191.063343
+    },
+    {
+      "name": "2Q1",
+      "amplitude": 0.0018148300000000001,
+      "phase": 316.231748
+    },
+    {
+      "name": "MSF",
+      "amplitude": 0.00535364,
+      "phase": 109.50553200000002
+    },
+    {
+      "name": "MSQM",
+      "amplitude": 0.00191142,
+      "phase": 245.305396
+    },
+    {
+      "name": "EP2",
+      "amplitude": 0.01184437,
+      "phase": 198.838755
+    },
+    {
+      "name": "M3",
+      "amplitude": 0.009002900000000001,
+      "phase": 44.54635400000001
+    },
+    {
+      "name": "MU2",
+      "amplitude": 0.03897933,
+      "phase": 220.277307
+    },
+    {
+      "name": "MTM",
+      "amplitude": 0.0036186499999999997,
+      "phase": 178.71504300000004
+    },
+    {
+      "name": "NU2",
+      "amplitude": 0.06516944,
+      "phase": 121.601901
+    },
+    {
+      "name": "LAMBDA2",
+      "amplitude": 0.03064441,
+      "phase": 145.98846000000003
+    },
+    {
+      "name": "MN4",
+      "amplitude": 0.02367646,
+      "phase": 194.791734
+    },
+    {
+      "name": "MS4",
+      "amplitude": 0.0315992,
+      "phase": 296.42055700000003
+    },
+    {
+      "name": "MKS2",
+      "amplitude": 0.0033285,
+      "phase": 297.683174
+    },
+    {
+      "name": "N4",
+      "amplitude": 0.0042711,
+      "phase": 157.54381899999998
+    },
+    {
+      "name": "M6",
+      "amplitude": 0.02095323,
+      "phase": 189.721346
+    },
+    {
+      "name": "M8",
+      "amplitude": 0.00348097,
+      "phase": 280.17679
+    },
+    {
+      "name": "S4",
+      "amplitude": 0.00008871999999999999,
+      "phase": 41.53460200000001
+    },
+    {
+      "name": "OO1",
+      "amplitude": 0.0018992400000000002,
+      "phase": 77.67077899999998
+    },
+    {
+      "name": "S3",
+      "amplitude": 0.000993,
+      "phase": 238.528779
+    },
+    {
+      "name": "MA2",
+      "amplitude": 0.00723297,
+      "phase": 9.900686000000007
+    },
+    {
+      "name": "MB2",
+      "amplitude": 0.01333416,
+      "phase": 189.829094
+    },
+    {
+      "name": "T3",
+      "amplitude": 0.00124719,
+      "phase": 251.168777
+    },
+    {
+      "name": "R3",
+      "amplitude": 0.0007238899999999999,
+      "phase": 98.14463999999998
+    },
+    {
+      "name": "RHO1",
+      "amplitude": 0.0033756000000000003,
+      "phase": 355.075319
+    },
+    {
+      "name": "SGM",
+      "amplitude": 0.0008123900000000001,
+      "phase": 146.80810099999997
+    },
+    {
+      "name": "3L2",
+      "amplitude": 0.007028609999999999,
+      "phase": 299.935789
+    },
+    {
+      "name": "3N2",
+      "amplitude": 0.0021332599999999997,
+      "phase": 130.639546
+    },
+    {
+      "name": "2SM2",
+      "amplitude": 0.01740005,
+      "phase": 55.30790300000001
+    },
+    {
+      "name": "2MS6",
+      "amplitude": 0.02192159,
+      "phase": 255.963397
+    },
+    {
+      "name": "2MK5",
+      "amplitude": 0.00083593,
+      "phase": 302.006089
+    },
+    {
+      "name": "2MO5",
+      "amplitude": 0.0014393000000000001,
+      "phase": 293.001569
+    }
+  ],
+  "epoch": {
+    "start": "2011-12-31",
+    "end": "2025-06-29"
+  }
+}
