@@ -8,6 +8,6 @@
     "build:data": "node scripts/build-data.mjs"
   },
   "devDependencies": {
-    "@neaps/tide-database": "^1.0.0"
+    "@neaps/tide-database": "^0.8.20260701"
   }
 }
