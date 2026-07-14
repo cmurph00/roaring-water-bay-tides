@@ -1,4 +1,4 @@
-import { stations as allStations } from "@neaps/tide-database";
+import { allStations } from "@neaps/tide-database";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 
 const REGION_CONTINENT = "Europe"; // change to expand coverage
@@ -19,10 +19,12 @@ function toIndexEntry(s) {
 }
 
 async function build() {
-  // NOTE: `@neaps/tide-database`'s `stations` export is an already-quality-filtered
-  // ARRAY, not a callable factory function as originally assumed (see task-2-report.md
-  // "Deviations from brief" for details). `allStations` (the raw, unfiltered export) also
-  // exists in the package but is intentionally not used here.
+  // NOTE: `@neaps/tide-database` exports both a quality-curated `stations` array and
+  // a raw `allStations` array. The curated `stations` export applies an opaque quality
+  // heuristic that drops ~253 valid, correctly-licensed European stations (580 vs 833
+  // after the same Europe + commercial-safe + has-constituents filters below). Operator
+  // decision (review finding, 2026-07-14): use full coverage via `allStations`, applying
+  // our own filters instead of relying on the package's curation.
   const kept = allStations
     .filter(inRegion)
     .filter((s) => isCommercialSafe(s.license))
