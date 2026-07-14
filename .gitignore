@@ -6,3 +6,6 @@ node_modules/
 
 # Claude Code auto-memory
 .claude/auto-memory/dirty-files
+
+# Superpowers SDD scratch
+.superpowers/
