@@ -124,6 +124,26 @@ function selectedCountry() {
   return document.getElementById("country-filter").value;
 }
 
+// Sets #country-filter's value to `country` iff it's one of the select's
+// existing options (populated from distinctCountries(index) in
+// wireCountryFilter); otherwise leaves the current selection unchanged.
+// Setting .value programmatically does NOT fire a "change" event, so this
+// never triggers the change listener's renderStationList/clear side effect —
+// callers that also want the list rendered must do so explicitly.
+//
+// This is how we offline-derive a "detected country" (from the resolved
+// station's own `country` field) without any reverse-geocoding service. For
+// the Phase 2 native app, the device locale/region (app-store based) could
+// seed this instead of geolocation.
+function setCountryFilter(country) {
+  if (!country) return;
+  const select = document.getElementById("country-filter");
+  const hasOption = Array.from(select.options).some((o) => o.value === country);
+  if (hasOption) {
+    select.value = country;
+  }
+}
+
 function searchScope() {
   const country = selectedCountry();
   return country ? filterByCountry(index, country) : index;
@@ -178,6 +198,10 @@ async function useMyLocation() {
   try {
     const { lat, lon } = await detectLocation();
     const { station, distanceKm } = nearestStation(lat, lon, index);
+    // Reflect the detected station's country in the dropdown before
+    // rendering; searchScope() reads the select value, so this also scopes
+    // subsequent searches to the user's country.
+    setCountryFilter(station.country);
     await showStation(station, distanceKm);
   } catch {
     // Denied/unavailable → leave last-used/default in place
@@ -194,6 +218,7 @@ export async function init() {
   const savedId = localStorage.getItem(LS_KEY);
   const saved = index.find((s) => s.id === savedId);
   if (saved) {
+    setCountryFilter(saved.country);
     try {
       await showStation(saved, null);
     } catch {
