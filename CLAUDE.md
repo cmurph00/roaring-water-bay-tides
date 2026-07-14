@@ -6,8 +6,9 @@ into a global tide predictor. Static site, no backend, installable as a PWA.
 
 **Current phase**: Phase 1 design drafted — see
 `docs/superpowers/specs/2026-07-14-global-tide-predictor-design.md` for full architecture, data flow,
-licensing rules, and testing plan. No implementation of the redesign has landed yet; the existing
-`index.html` is still the original single-station (Ringaskiddy-proxy) app.
+licensing rules, and testing plan. A task-by-task implementation plan now exists at
+`docs/superpowers/plans/2026-07-14-global-tide-predictor.md`. No implementation of the redesign has
+landed yet; the existing `index.html` is still the original single-station (Ringaskiddy-proxy) app.
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: architecture -->
