@@ -38,8 +38,8 @@ async function staleWhileRevalidate(request) {
     .catch(() => undefined);
 
   if (cached) {
-    // Update cache in the background; don't block the response on it.
-    networkFetch.catch(() => {});
+    // Update cache in the background; don't block the response on it. networkFetch
+    // already swallows its own rejections above, so it never needs a second catch here.
     return cached;
   }
   const fresh = await networkFetch;

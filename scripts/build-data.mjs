@@ -4,18 +4,37 @@ import { mkdir, writeFile, rm, readFile } from "node:fs/promises";
 const REGION_CONTINENT = "Europe"; // change to expand coverage
 const CACHE_MANIFEST_PATH = new URL("../src/cache-manifest.js", import.meta.url);
 
-// Rewrites the CACHE_VERSION constant in src/cache-manifest.js to a fresh build stamp
-// (station count + build date) so the sw.js runtime data cache auto-invalidates whenever
-// the dataset is regenerated. Leaves CACHE_ASSETS untouched.
-export function stampCacheVersion(source, stationCount, date = new Date()) {
+const CACHE_VERSION_RE = /export const CACHE_VERSION = ".*?";/;
+
+// Pure string transform: rewrites the CACHE_VERSION declaration inside the given
+// src/cache-manifest.js source to the given version, leaving everything else (notably
+// CACHE_ASSETS) byte-for-byte untouched. Throws loudly if the declaration isn't found,
+// rather than silently no-op'ing — a format drift here would otherwise mean the sw.js
+// runtime data cache stops invalidating on rebuild with no visible signal.
+export function applyCacheVersion(source, version) {
+  if (!CACHE_VERSION_RE.test(source)) {
+    throw new Error(
+      "applyCacheVersion: no CACHE_VERSION declaration found in source — cache-manifest.js format may have changed"
+    );
+  }
+  return source.replace(CACHE_VERSION_RE, `export const CACHE_VERSION = "${version}";`);
+}
+
+function buildVersion(stationCount, date = new Date()) {
   const yyyy = date.getUTCFullYear();
   const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(date.getUTCDate()).padStart(2, "0");
-  const version = `v${stationCount}-${yyyy}${mm}${dd}`;
-  return source.replace(
-    /export const CACHE_VERSION = ".*?";/,
-    `export const CACHE_VERSION = "${version}";`
-  );
+  return `v${stationCount}-${yyyy}${mm}${dd}`;
+}
+
+// Rewrites the CACHE_VERSION constant in src/cache-manifest.js to a fresh build stamp
+// (station count + build date) so the sw.js runtime data cache auto-invalidates whenever
+// the dataset is regenerated. File-writing wrapper around the pure applyCacheVersion().
+export async function stampCacheVersion(stationCount, date = new Date()) {
+  const version = buildVersion(stationCount, date);
+  const source = await readFile(CACHE_MANIFEST_PATH, "utf8");
+  const stamped = applyCacheVersion(source, version);
+  await writeFile(CACHE_MANIFEST_PATH, stamped);
 }
 
 export function isCommercialSafe(license) {
@@ -63,9 +82,7 @@ async function build() {
     `Licenses present: ${[...sources].join(", ")}.\n`;
   await writeFile("DATA-SOURCES.md", attribution);
 
-  const manifestSource = await readFile(CACHE_MANIFEST_PATH, "utf8");
-  const stamped = stampCacheVersion(manifestSource, kept.length);
-  await writeFile(CACHE_MANIFEST_PATH, stamped);
+  await stampCacheVersion(kept.length);
 
   console.log(`Wrote ${kept.length} stations to data/`);
 }
