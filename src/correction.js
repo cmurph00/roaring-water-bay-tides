@@ -7,7 +7,7 @@ export function applyCorrection(tides, correction) {
   if (!correction || !correction.timeOffsetMin) return tides;
   const { high, low } = correction.timeOffsetMin;
   return tides.map((t) => {
-    const offsetMin = t.type === "high" ? high : low;
+    const offsetMin = (t.type === "high" ? high : low) ?? 0;
     return { ...t, time: new Date(t.time.getTime() + offsetMin * 60000) };
   });
 }

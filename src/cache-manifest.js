@@ -8,6 +8,8 @@ export const CACHE_ASSETS = [
   "./index.html",
   "./manifest.webmanifest",
   "./data/stations.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
   "./src/ui.js",
   "./src/engine.js",
   "./src/resolver.js",

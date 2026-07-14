@@ -20,6 +20,9 @@ async function loadStation(id) {
 async function showStation(entry, distanceKm) {
   localStorage.setItem(LS_KEY, entry.id);
   const station = await loadStation(entry.id);
+  // "Today" is the browser-local calendar day; switch to the station's own
+  // timezone here once date-picking/multi-timezone browsing is added, so a
+  // user near a day boundary doesn't see the wrong local day for a distant station.
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const end = new Date(start.getTime() + 24 * 3600 * 1000 - 1);
@@ -27,6 +30,11 @@ async function showStation(entry, distanceKm) {
   tides = applyCorrection(tides, null); // home-spot correction wired later if configured
   renderHeader(entry, distanceKm, station);
   renderTides(tides, station.timezone);
+}
+
+function renderError(message) {
+  const container = document.getElementById("results");
+  container.innerHTML = `<div class="err">${message}</div>`;
 }
 
 function renderHeader(entry, distanceKm, station) {
@@ -60,7 +68,11 @@ function wireSearch() {
     for (const m of matches) {
       const li = document.createElement("li");
       li.textContent = `${m.name}, ${m.country}`;
-      li.addEventListener("click", () => showStation(m, null));
+      li.addEventListener("click", () => {
+        showStation(m, null).catch(() => {
+          renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+        });
+      });
       list.appendChild(li);
     }
   });
@@ -84,7 +96,11 @@ export async function init() {
   const savedId = localStorage.getItem(LS_KEY);
   const saved = index.find((s) => s.id === savedId);
   if (saved) {
-    await showStation(saved, null);
+    try {
+      await showStation(saved, null);
+    } catch {
+      renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+    }
   } else {
     useMyLocation(); // first run: try geolocation
   }

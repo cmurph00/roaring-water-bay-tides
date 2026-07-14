@@ -1,4 +1,7 @@
-  /* ---- Inlined @neaps/tide-predictor engine (MIT licensed, self-contained, no imports) ---- */
+  /* ---- Inlined @neaps/tide-predictor engine (MIT licensed, self-contained, no imports) ----
+   * Copyright (c) 2019 Kevin Miller
+   * MIT — full text in THIRD-PARTY-LICENSES.md
+   */
 //#region src/astronomy/constants.ts
 const d2r = Math.PI / 180;
 const r2d = 180 / Math.PI;
