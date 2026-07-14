@@ -73,6 +73,10 @@ function renderStationList(stations) {
     const li = document.createElement("li");
     li.textContent = `${m.name}, ${m.country}`;
     li.addEventListener("click", () => {
+      // Close the dropdown and clear the query as soon as a station is chosen.
+      list.innerHTML = "";
+      const input = document.getElementById("station-search");
+      if (input) input.value = "";
       showStation(m, null).catch(() => {
         renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
       });
