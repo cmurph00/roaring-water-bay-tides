@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { haversineKm, nearestStation, searchStations } from "../src/location.js";
+import {
+  haversineKm,
+  nearestStation,
+  searchStations,
+  distinctCountries,
+  filterByCountry,
+} from "../src/location.js";
 
 const stations = [
   { id: "a", name: "Cork", country: "Ireland", latitude: 51.9, longitude: -8.3, timezone: "Europe/Dublin" },
@@ -20,4 +26,29 @@ test("nearestStation picks the closest gauge", () => {
 
 test("searchStations matches by name, case-insensitive", () => {
   assert.deepEqual(searchStations("dov", stations).map((s) => s.id), ["b"]);
+});
+
+test("distinctCountries returns unique, sorted, truthy countries without mutating input", () => {
+  const input = [
+    { country: "Ireland" },
+    { country: "France" },
+    { country: "Ireland" },
+    { country: "" },
+  ];
+  const copy = input.map((s) => ({ ...s }));
+  assert.deepEqual(distinctCountries(input), ["France", "Ireland"]);
+  assert.deepEqual(input, copy, "input array must not be mutated");
+});
+
+test("filterByCountry returns only stations matching the exact country", () => {
+  assert.deepEqual(
+    filterByCountry(stations, "Ireland").map((s) => s.id),
+    ["a"]
+  );
+});
+
+test("filterByCountry returns [] for a falsy country (All countries)", () => {
+  assert.deepEqual(filterByCountry(stations, ""), []);
+  assert.deepEqual(filterByCountry(stations, null), []);
+  assert.deepEqual(filterByCountry(stations, undefined), []);
 });

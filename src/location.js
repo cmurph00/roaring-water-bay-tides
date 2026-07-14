@@ -29,6 +29,16 @@ export function searchStations(query, stations) {
   );
 }
 
+export function distinctCountries(stations) {
+  const countries = new Set(stations.map((s) => s.country).filter(Boolean));
+  return [...countries].sort();
+}
+
+export function filterByCountry(stations, country) {
+  if (!country) return [];
+  return stations.filter((s) => s.country === country);
+}
+
 // Browser-only. Isolated here so the Phase 2 Capacitor wrap swaps only this function.
 export function detectLocation() {
   return new Promise((resolve, reject) => {

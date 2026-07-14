@@ -73,6 +73,7 @@
 
   input[type="text"] { min-width: 14rem; width: 100%; }
   input[type="text"]::placeholder { color: rgba(233,226,207,0.35); }
+  select { min-width: 9rem; }
 
   button {
     background: var(--brass); color: var(--navy-deep); border: none; border-radius: 6px;
@@ -152,6 +153,12 @@
     </header>
 
     <div class="controls">
+      <div class="field">
+        <label for="country-filter">Country</label>
+        <select id="country-filter">
+          <option value="">All countries</option>
+        </select>
+      </div>
       <div class="field search-field">
         <label for="station-search">Find a gauge</label>
         <input type="text" id="station-search" placeholder="Search station or country&hellip;" autocomplete="off" />

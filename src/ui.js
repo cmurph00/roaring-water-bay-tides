@@ -1,4 +1,10 @@
-import { nearestStation, searchStations, detectLocation } from "./location.js";
+import {
+  nearestStation,
+  searchStations,
+  detectLocation,
+  distinctCountries,
+  filterByCountry,
+} from "./location.js";
 import { getTides } from "./resolver.js";
 import { applyCorrection } from "./correction.js";
 import { fmtTime, fmtDistance } from "./format.js";
@@ -6,6 +12,7 @@ import { fmtTime, fmtDistance } from "./format.js";
 const INDEX_URL = "./data/stations.json";
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const LS_KEY = "rwb.selectedStationId";
+const MAX_RESULTS = 50;
 
 let index = [];
 
@@ -59,21 +66,50 @@ function renderTides(tides, timezone) {
   container.appendChild(table);
 }
 
+function renderStationList(stations) {
+  const list = document.getElementById("search-results");
+  list.innerHTML = "";
+  for (const m of stations.slice(0, MAX_RESULTS)) {
+    const li = document.createElement("li");
+    li.textContent = `${m.name}, ${m.country}`;
+    li.addEventListener("click", () => {
+      showStation(m, null).catch(() => {
+        renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+      });
+    });
+    list.appendChild(li);
+  }
+}
+
+function selectedCountry() {
+  return document.getElementById("country-filter").value;
+}
+
+function searchScope() {
+  const country = selectedCountry();
+  return country ? filterByCountry(index, country) : index;
+}
+
 function wireSearch() {
   const input = document.getElementById("station-search");
-  const list = document.getElementById("search-results");
   input.addEventListener("input", () => {
-    const matches = searchStations(input.value, index).slice(0, 10);
-    list.innerHTML = "";
-    for (const m of matches) {
-      const li = document.createElement("li");
-      li.textContent = `${m.name}, ${m.country}`;
-      li.addEventListener("click", () => {
-        showStation(m, null).catch(() => {
-          renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
-        });
-      });
-      list.appendChild(li);
+    renderStationList(searchStations(input.value, searchScope()));
+  });
+}
+
+function wireCountryFilter() {
+  const select = document.getElementById("country-filter");
+  for (const country of distinctCountries(index)) {
+    const option = document.createElement("option");
+    option.value = country;
+    option.textContent = country;
+    select.appendChild(option);
+  }
+  select.addEventListener("change", () => {
+    if (select.value) {
+      renderStationList(filterByCountry(index, select.value));
+    } else {
+      document.getElementById("search-results").innerHTML = "";
     }
   });
 }
@@ -91,6 +127,7 @@ async function useMyLocation() {
 export async function init() {
   await loadIndex();
   wireSearch();
+  wireCountryFilter();
   document.getElementById("use-location").addEventListener("click", useMyLocation);
 
   const savedId = localStorage.getItem(LS_KEY);
