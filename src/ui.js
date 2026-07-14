@@ -1,0 +1,91 @@
+import { nearestStation, searchStations, detectLocation } from "./location.js";
+import { getTides } from "./resolver.js";
+import { applyCorrection } from "./correction.js";
+import { fmtTime, fmtDistance } from "./format.js";
+
+const INDEX_URL = "./data/stations.json";
+const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
+const LS_KEY = "rwb.selectedStationId";
+
+let index = [];
+
+async function loadIndex() {
+  index = await fetch(INDEX_URL).then((r) => r.json());
+}
+
+async function loadStation(id) {
+  return fetch(stationUrl(id)).then((r) => r.json());
+}
+
+async function showStation(entry, distanceKm) {
+  localStorage.setItem(LS_KEY, entry.id);
+  const station = await loadStation(entry.id);
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start.getTime() + 24 * 3600 * 1000 - 1);
+  let tides = await getTides(station, { start, end });
+  tides = applyCorrection(tides, null); // home-spot correction wired later if configured
+  renderHeader(entry, distanceKm, station);
+  renderTides(tides, station.timezone);
+}
+
+function renderHeader(entry, distanceKm, station) {
+  const el = document.getElementById("station-header");
+  const dist = distanceKm != null ? ` · nearest gauge ${fmtDistance(distanceKm)} away` : "";
+  el.textContent = `${entry.name}, ${entry.country}${dist} · heights vs ${station.chart_datum ?? "chart datum"}`;
+}
+
+function renderTides(tides, timezone) {
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+  const table = document.createElement("table");
+  for (const t of tides) {
+    const row = document.createElement("tr");
+    const isHigh = t.type === "high";
+    row.innerHTML =
+      `<td>${isHigh ? "▲ High" : "▼ Low"}</td>` +
+      `<td class="time">${fmtTime(t.time, timezone)}</td>` +
+      `<td class="height">${t.height.toFixed(2)} m</td>`;
+    table.appendChild(row);
+  }
+  container.appendChild(table);
+}
+
+function wireSearch() {
+  const input = document.getElementById("station-search");
+  const list = document.getElementById("search-results");
+  input.addEventListener("input", () => {
+    const matches = searchStations(input.value, index).slice(0, 10);
+    list.innerHTML = "";
+    for (const m of matches) {
+      const li = document.createElement("li");
+      li.textContent = `${m.name}, ${m.country}`;
+      li.addEventListener("click", () => showStation(m, null));
+      list.appendChild(li);
+    }
+  });
+}
+
+async function useMyLocation() {
+  try {
+    const { lat, lon } = await detectLocation();
+    const { station, distanceKm } = nearestStation(lat, lon, index);
+    await showStation(station, distanceKm);
+  } catch {
+    // Denied/unavailable → leave last-used/default in place
+  }
+}
+
+export async function init() {
+  await loadIndex();
+  wireSearch();
+  document.getElementById("use-location").addEventListener("click", useMyLocation);
+
+  const savedId = localStorage.getItem(LS_KEY);
+  const saved = index.find((s) => s.id === savedId);
+  if (saved) {
+    await showStation(saved, null);
+  } else {
+    useMyLocation(); // first run: try geolocation
+  }
+}
