@@ -1,6 +1,6 @@
 {
-  "name": "Tide Predictor",
-  "short_name": "Tides",
+  "name": "RWB Tides",
+  "short_name": "RWB Tides",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b1e2d",
