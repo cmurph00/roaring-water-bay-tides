@@ -101,15 +101,15 @@ export function buildAttribution({
 
   if (epaCount != null) {
     attribution +=
-      `\n## EPA/Marine Institute beach tide model (West Cork)\n\n` +
+      `\n## EPA/Marine Institute beach tide model (all-Ireland)\n\n` +
       `- **EPA / Marine Institute** (Ireland, CC-BY-4.0) — via the Marine Institute ERDDAP server\n` +
       `  at https://erddap.marine.ie/erddap/ (\`imiTidePredictionEpa\` dataset). Covers ${epaCount}\n` +
-      `  named West Cork tide-prediction points, each derived from its own EPA bathing-water\n` +
-      `  hydrodynamic model node's continuous \`sea_surface_height\` output — high/low extremes\n` +
-      `  extracted directly from that node (not resolved to a distant real gauge), for\n` +
-      `  2026-2028. A node is kept and named whenever it's within 2km of a registered bathing\n` +
-      `  beach or a GeoNames coastal place (town/harbour/bay/...); only genuinely offshore\n` +
-      `  nodes are dropped. Regenerate via \`node scripts/build-epa.mjs\`.\n`;
+      `  named tide-prediction points around the Irish coast, each derived from its own EPA\n` +
+      `  bathing-water hydrodynamic model node's continuous \`sea_surface_height\` output —\n` +
+      `  high/low extremes extracted directly from that node (not resolved to a distant real\n` +
+      `  gauge), for 2026-2027. A node is kept and named whenever it's within 2km of a\n` +
+      `  registered bathing beach or a GeoNames coastal place (town/harbour/bay/...); only\n` +
+      `  genuinely offshore nodes are dropped. Regenerate via \`node scripts/build-epa.mjs\`.\n`;
   }
 
   if (placesCount != null) {

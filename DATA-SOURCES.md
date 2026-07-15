@@ -25,16 +25,16 @@ Licenses present: cc-by-4.0.
   come from the app's nearest real prediction station (see src/ui.js), not from EPA data.
   Regenerate via `node scripts/build-beaches.mjs`.
 
-## EPA/Marine Institute beach tide model (West Cork)
+## EPA/Marine Institute beach tide model (all-Ireland)
 
 - **EPA / Marine Institute** (Ireland, CC-BY-4.0) — via the Marine Institute ERDDAP server
-  at https://erddap.marine.ie/erddap/ (`imiTidePredictionEpa` dataset). Covers 32
-  named West Cork tide-prediction points, each derived from its own EPA bathing-water
-  hydrodynamic model node's continuous `sea_surface_height` output — high/low extremes
-  extracted directly from that node (not resolved to a distant real gauge), for
-  2026-2028. A node is kept and named whenever it's within 2km of a registered bathing
-  beach or a GeoNames coastal place (town/harbour/bay/...); only genuinely offshore
-  nodes are dropped. Regenerate via `node scripts/build-epa.mjs`.
+  at https://erddap.marine.ie/erddap/ (`imiTidePredictionEpa` dataset). Covers 183
+  named tide-prediction points around the Irish coast, each derived from its own EPA
+  bathing-water hydrodynamic model node's continuous `sea_surface_height` output —
+  high/low extremes extracted directly from that node (not resolved to a distant real
+  gauge), for 2026-2027. A node is kept and named whenever it's within 2km of a
+  registered bathing beach or a GeoNames coastal place (town/harbour/bay/...); only
+  genuinely offshore nodes are dropped. Regenerate via `node scripts/build-epa.mjs`.
 
 ## GeoNames coastal-place gazetteer
 

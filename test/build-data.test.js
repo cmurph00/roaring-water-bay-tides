@@ -87,9 +87,10 @@ test("buildAttribution includes both MI and EPA sections when both are present",
   assert.ok(text.indexOf("Marine Institute (Ireland) offline predictions") < text.indexOf("EPA (Ireland) named bathing-water beaches"));
 });
 
-// epaCount (Task 18): the EPA/Marine Institute West Cork tide-model section, same
-// durability pattern — omitted when epaCount is null/absent, appended when present, and
-// doesn't interfere with the (differently-named) EPA-beaches section above.
+// epaCount (Task 18, widened nationwide Task 26): the EPA/Marine Institute all-Ireland
+// tide-model section, same durability pattern — omitted when epaCount is null/absent,
+// appended when present, and doesn't interfere with the (differently-named) EPA-beaches
+// section above.
 
 test("buildAttribution omits the EPA tide-model section when epaCount is absent", () => {
   const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: null, beachCount: null });
@@ -97,14 +98,14 @@ test("buildAttribution omits the EPA tide-model section when epaCount is absent"
 });
 
 test("buildAttribution appends the EPA tide-model section when epaCount is present", () => {
-  const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: null, beachCount: null, epaCount: 32 });
-  assert.match(text, /## EPA\/Marine Institute beach tide model \(West Cork\)/);
-  assert.match(text, /Covers 32\s*\n?\s*named West Cork tide-prediction points/);
-  assert.match(text, /within 2km of a registered bathing\s*\n?\s*beach or a GeoNames coastal place/);
+  const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: null, beachCount: null, epaCount: 200 });
+  assert.match(text, /## EPA\/Marine Institute beach tide model \(all-Ireland\)/);
+  assert.match(text, /Covers 200\s*\n?\s*named tide-prediction points around the Irish coast/);
+  assert.match(text, /within 2km of\s+a\s+registered\s+bathing\s+beach or a GeoNames coastal place/);
 });
 
 test("buildAttribution includes MI, EPA-beaches, and EPA tide-model sections together, in that order", () => {
-  const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: 38, beachCount: 150, epaCount: 32 });
+  const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: 38, beachCount: 150, epaCount: 200 });
   const miIdx = text.indexOf("Marine Institute (Ireland) offline predictions");
   const beachIdx = text.indexOf("EPA (Ireland) named bathing-water beaches");
   const epaIdx = text.indexOf("EPA/Marine Institute beach tide model");

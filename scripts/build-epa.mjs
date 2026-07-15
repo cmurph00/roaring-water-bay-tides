@@ -1,4 +1,4 @@
-// Builds data/epa/<sanitizedId>.json + data/epa-stations.json — named, offline West Cork
+// Builds data/epa/<sanitizedId>.json + data/epa-stations.json — named, offline all-Ireland
 // "beach model" tide-prediction points derived from the EPA/Marine Institute bathing-water
 // hydrodynamic model's continuous `sea_surface_height` output (ERDDAP dataset
 // `imiTidePredictionEpa`, CC-BY-4.0, https://erddap.marine.ie/erddap/).
@@ -32,9 +32,10 @@
 // they're close enough to their own EPA node (Schull is), the node itself now carries that
 // name directly rather than needing a separate alias-resolution hop.
 //
-// Scope: West Cork bbox only for now (BBOX below). Deliberately NOT the full 219-node EPA
-// catalogue, to keep the offline bundle small; widen BBOX/WINDOW_YEARS to cover more of the
-// coast later (see docs/marine-ie-data-audit.md for candidates).
+// Scope: Task 26 widened this from a West Cork-only bbox to all of Ireland (BBOX below),
+// covering essentially the full ~219-node EPA catalogue. The prediction window was narrowed
+// from 3 years to 2 (WINDOW_YEARS below) at the same time to keep the offline bundle size in
+// check with ~7x more nodes now in scope (see docs/marine-ie-data-audit.md for background).
 //
 // Do NOT bundle the raw continuous series anywhere — only the extracted high/low extremes.
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
@@ -43,13 +44,13 @@ import { haversineKm } from "../src/location.js";
 const ERDDAP_BASE = "https://erddap.marine.ie/erddap/tabledap/imiTidePredictionEpa.csv";
 export const NODE_LIST_URL = `${ERDDAP_BASE}?stationID,longitude,latitude&distinct()`;
 
-// West Cork only, for now — whatever EPA nodes fall in the same box. Generalizable later:
-// widen this + WINDOW_YEARS.
-export const BBOX = { minLat: 51.3, maxLat: 51.95, minLon: -10.35, maxLon: -8.0 };
+// All of Ireland (Task 26 — widened from a West Cork-only box) — whatever EPA nodes fall in
+// this box, essentially the full EPA node catalogue.
+export const BBOX = { minLat: 51.2, maxLat: 55.5, minLon: -10.7, maxLon: -5.9 };
 
-// Matches the Marine Institute dataset's fixed prediction window (scripts/build-mi.mjs) —
-// fetched in yearly chunks to avoid one huge request per node.
-export const WINDOW_YEARS = [2026, 2027, 2028];
+// Task 26: narrowed from 3 years to 2 to cap total bundle size now that BBOX covers all of
+// Ireland (~7x more nodes). Fetched in yearly chunks to avoid one huge request per node.
+export const WINDOW_YEARS = [2026, 2027];
 
 const MIN_PROMINENCE = 0.15; // metres — rejects noise/flat-spot wobbles, see extractExtrema
 export const COASTAL_NAME_RADIUS_KM = 2; // keep/naming radius — beyond this of every coastal place, a node is OFFSHORE
@@ -213,8 +214,21 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Task 26: the all-Ireland bbox multiplies the node count ~7x over the old West Cork-only
+// run, so a transient ERDDAP hiccup (network blip, not just a non-2xx response) on any single
+// chunk is far more likely to happen at least once across the whole run — retry once on a
+// thrown fetch error too (timeout/reset/DNS), not just a non-ok HTTP status.
 async function fetchText(url, attempt = 0) {
-  const res = await fetch(url);
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    if (attempt < 1) {
+      await sleep(500);
+      return fetchText(url, attempt + 1);
+    }
+    throw new Error(`Network error for ${url}: ${err.message}`);
+  }
   if (!res.ok) {
     if (attempt < 1) {
       await sleep(500);
@@ -226,7 +240,7 @@ async function fetchText(url, attempt = 0) {
 }
 
 /**
- * Fetches the full ERDDAP node list and returns just the West Cork bbox candidates — every
+ * Fetches the full ERDDAP node list and returns just the all-Ireland bbox candidates — every
  * node ERDDAP has data for in the box, independent of any naming/keep decision. Exported so
  * scripts/build-places.mjs can use the same candidate points as a coastal "prediction
  * source" for its own proximity filter: the already-published data/epa-stations.json only
@@ -313,7 +327,7 @@ async function build() {
   console.log("Fetching EPA node list...");
   const allNodes = parseNodeListCsv(await fetchText(NODE_LIST_URL));
   const bboxNodes = allNodes.filter((n) => inBbox(n.latitude, n.longitude));
-  console.log(`${allNodes.length} EPA nodes total; ${bboxNodes.length} within the West Cork bbox.`);
+  console.log(`${allNodes.length} EPA nodes total; ${bboxNodes.length} within the all-Ireland bbox.`);
 
   if (bboxNodes.length === 0) {
     console.error("No EPA nodes found in the configured bbox — refusing to write an empty dataset.");

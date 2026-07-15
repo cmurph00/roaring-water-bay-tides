@@ -17,11 +17,15 @@ test("inBbox keeps a point inside the West Cork box", () => {
   assert.equal(inBbox(51.48, -9.38), true); // Baltimore
 });
 
-test("inBbox rejects a point outside the box", () => {
-  assert.equal(inBbox(53.34, -6.22), false); // Dublin
+test("inBbox keeps a point elsewhere on the Irish coast (Task 26 — all-Ireland bbox)", () => {
+  assert.equal(inBbox(53.34, -6.22), true); // Dublin
 });
 
-test("BBOX is sane (West Cork)", () => {
+test("inBbox rejects a point outside the box", () => {
+  assert.equal(inBbox(51.51, -0.13), false); // London — well east of the Irish coast
+});
+
+test("BBOX is sane (all-Ireland, Task 26)", () => {
   assert.ok(BBOX.minLat < BBOX.maxLat && BBOX.minLon < BBOX.maxLon);
 });
 
