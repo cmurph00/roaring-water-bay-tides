@@ -13,26 +13,33 @@ import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from 
 
 const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
+const EPA_INDEX_URL = "./data/epa-stations.json";
 const BEACHES_URL = "./data/beaches.json";
-const MI_OVERLAP_KM = 3; // TICON entries within this radius of an MI station are dropped
+const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local entry are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
+const epaStationUrl = (id) => `./data/epa/${id}.json`;
 const LS_KEY = "rwb.selectedStationId";
 const LS_DAYS_KEY = "rwb.days";
 const VALID_DAY_COUNTS = [1, 3, 5, 7, 10];
 const DEFAULT_DAY_COUNT = 3;
 const MAX_RESULTS = 50;
 
-// Marine Institute (offline, CC-BY-4.0) predictions are preferred over the general-purpose
-// TICON/NOAA harmonic dataset for Irish stations: MI covers real published tide-table
-// predictions rather than a computed approximation. Keep every MI entry, plus every TICON
-// entry that isn't within MI_OVERLAP_KM of an MI station (avoids showing two near-duplicate
-// entries for the same physical gauge).
-export function mergeStationIndexes(ticon, mi) {
-  const kept = ticon.filter(
-    (t) => !mi.some((m) => haversineKm({ lat: t.latitude, lon: t.longitude }, { lat: m.latitude, lon: m.longitude }) <= MI_OVERLAP_KM)
-  );
-  return [...mi, ...kept];
+// Preference order: EPA > MI > TICON. EPA model nodes (offline, CC-BY-4.0) are the most
+// local prediction available where they exist — each node predicts its own water level
+// directly (see scripts/build-epa.mjs), rather than borrowing a real gauge's tide table
+// from tens of km away. Marine Institute (offline, CC-BY-4.0) predictions are in turn
+// preferred over the general-purpose TICON/NOAA harmonic dataset for Irish stations: MI
+// covers real published tide-table predictions rather than a computed approximation. Keep
+// every EPA entry; every MI entry that isn't within MI_OVERLAP_KM of an EPA entry; and every
+// TICON entry that isn't within MI_OVERLAP_KM of an EPA or (kept) MI entry — this avoids
+// showing near-duplicate entries for the same physical location.
+export function mergeStationIndexes(ticon, mi, epa = []) {
+  const near = (a, b) => haversineKm({ lat: a.latitude, lon: a.longitude }, { lat: b.latitude, lon: b.longitude }) <= MI_OVERLAP_KM;
+
+  const keptMi = mi.filter((m) => !epa.some((e) => near(m, e)));
+  const keptTicon = ticon.filter((t) => !epa.some((e) => near(t, e)) && !mi.some((m) => near(t, m)));
+  return [...epa, ...keptMi, ...keptTicon];
 }
 
 let index = [];
@@ -50,7 +57,20 @@ async function loadIndex() {
     fetch(INDEX_URL).then((r) => r.json()),
     fetch(MI_INDEX_URL).then((r) => r.json()),
   ]);
-  index = mergeStationIndexes(ticon, mi);
+
+  // EPA (West Cork model nodes) is an optional enhancement layer, same as beaches below —
+  // an older cached build or a data/ tree that predates Task 18 simply has no
+  // epa-stations.json, and the app must fall back to the MI/TICON-only merge rather than
+  // breaking init().
+  let epa = [];
+  try {
+    const res = await fetch(EPA_INDEX_URL);
+    epa = res.ok ? await res.json() : [];
+  } catch {
+    epa = [];
+  }
+
+  index = mergeStationIndexes(ticon, mi, epa);
 
   // Beaches are an optional enhancement layer — a missing/404 data/beaches.json (e.g. an
   // older cached build, or the file simply not having been generated) must not break the
@@ -65,7 +85,8 @@ async function loadIndex() {
 }
 
 async function loadStation(entry) {
-  const url = entry.source === "mi" ? miStationUrl(entry.id) : stationUrl(entry.id);
+  const url =
+    entry.source === "epa" ? epaStationUrl(entry.id) : entry.source === "mi" ? miStationUrl(entry.id) : stationUrl(entry.id);
   return fetch(url).then((r) => r.json());
 }
 
@@ -92,7 +113,7 @@ async function showStation(entry, distanceKm, locality) {
 
   renderHeader(entry, distanceKm, station, locality);
   const emptyMessage =
-    station.source === "mi"
+    station.source === "mi" || station.source === "epa"
       ? "Marine Institute predictions cover 2026–2028. Pick a date in range."
       : "No tide data for this range.";
   renderDays(groups, station.timezone, emptyMessage);

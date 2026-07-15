@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "build:data": "node scripts/build-data.mjs",
-    "build:www": "node scripts/build-www.mjs"
+    "build:www": "node scripts/build-www.mjs",
+    "data:epa": "node scripts/build-epa.mjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",

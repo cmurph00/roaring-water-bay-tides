@@ -61,7 +61,7 @@ function toIndexEntry(s) {
  * data/mi-stations.json / data/beaches.json, or null when that dataset doesn't exist), so a
  * `build:data` rerun reproduces those sections instead of dropping them.
  */
-export function buildAttribution({ stationCount, licenses, miCount, beachCount }) {
+export function buildAttribution({ stationCount, licenses, miCount, beachCount, epaCount = null }) {
   let attribution =
     `# Data Sources\n\n` +
     `Tide station harmonic constituents used in this app:\n\n` +
@@ -89,6 +89,18 @@ export function buildAttribution({ stationCount, licenses, miCount, beachCount }
       `  national bathing-water register, used for beach names/locations only — tide predictions\n` +
       `  come from the app's nearest real prediction station (see src/ui.js), not from EPA data.\n` +
       `  Regenerate via \`node scripts/build-beaches.mjs\`.\n`;
+  }
+
+  if (epaCount != null) {
+    attribution +=
+      `\n## EPA/Marine Institute beach tide model (West Cork)\n\n` +
+      `- **EPA / Marine Institute** (Ireland, CC-BY-4.0) — via the Marine Institute ERDDAP server\n` +
+      `  at https://erddap.marine.ie/erddap/ (\`imiTidePredictionEpa\` dataset). Covers ${epaCount}\n` +
+      `  named West Cork tide-prediction points, each derived from its own EPA bathing-water\n` +
+      `  hydrodynamic model node's continuous \`sea_surface_height\` output — high/low extremes\n` +
+      `  extracted directly from that node (not resolved to a distant real gauge), for\n` +
+      `  2026-2028. Includes named entries for Baltimore, Schull, Crookhaven and Cape Clear,\n` +
+      `  none of which has a nearby real tide gauge. Regenerate via \`node scripts/build-epa.mjs\`.\n`;
   }
 
   return attribution;
@@ -134,6 +146,7 @@ async function build() {
   // (the durability bug flagged in Task 13's report).
   const miCount = await indexCount("data/mi-stations.json");
   const beachCount = await indexCount("data/beaches.json");
+  const epaCount = await indexCount("data/epa-stations.json");
 
   await rm("data", { recursive: true, force: true });
   await mkdir("data/stations", { recursive: true });
@@ -144,7 +157,7 @@ async function build() {
   }
 
   const sources = new Set(kept.map((s) => (typeof s.license === "string" ? s.license : s.license?.type ?? "public-domain")));
-  const attribution = buildAttribution({ stationCount: kept.length, licenses: [...sources], miCount, beachCount });
+  const attribution = buildAttribution({ stationCount: kept.length, licenses: [...sources], miCount, beachCount, epaCount });
   await writeFile("DATA-SOURCES.md", attribution);
 
   await stampCacheVersion(kept.length);
