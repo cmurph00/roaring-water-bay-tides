@@ -2,13 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   BBOX,
-  BEACH_NAME_RADIUS_KM,
+  COASTAL_NAME_RADIUS_KM,
   inBbox,
   parseNodeListCsv,
   parseSeriesCsv,
   parabolicPeak,
   extractExtrema,
-  labelNodeFromRegister,
+  labelNodeFromCoastalPlaces,
 } from "../scripts/build-epa.mjs";
 
 // --- inBbox ---------------------------------------------------------------
@@ -203,35 +203,57 @@ test("extractExtrema returns [] for a too-short series", () => {
   );
 });
 
-// --- labelNodeFromRegister (Task 21, Part B) ---------------------------------
+// --- labelNodeFromCoastalPlaces (Task 21 registered-beach rule; broadened Task 24) -------
 
-test("labelNodeFromRegister names a node by the nearest register beach within 2km", () => {
+test("labelNodeFromCoastalPlaces names a node by the nearest register beach within 2km", () => {
   const node = { id: "n1", latitude: 51.50148784, longitude: -9.2658542 }; // Tragumna's coords
   const beaches = [{ name: "Tragumna", latitude: 51.50148784, longitude: -9.2658542 }];
-  assert.equal(labelNodeFromRegister(node, beaches), "Tragumna");
+  assert.equal(labelNodeFromCoastalPlaces(node, beaches, []), "Tragumna");
 });
 
-test("labelNodeFromRegister returns null (OFFSHORE) when no register beach is within 2km", () => {
-  // ~12km from the only beach in the register — the real "Baltimore" mislabel case this
-  // task fixes: an offshore node must not inherit a nearby town/beach's name.
+test("labelNodeFromCoastalPlaces returns null (OFFSHORE) when no beach or place is within 2km", () => {
+  // ~12km from the only beach/place in range — the real "Baltimore" mislabel case Task 21
+  // fixed: an offshore node must not inherit a nearby town/beach's name.
   const node = { id: "n2", latitude: 51.47199, longitude: -9.432116 };
   const beaches = [{ name: "Tragumna", latitude: 51.50148784, longitude: -9.2658542 }];
-  assert.equal(labelNodeFromRegister(node, beaches, 2), null);
+  const places = [{ name: "Some Town", latitude: 51.6, longitude: -9.6 }];
+  assert.equal(labelNodeFromCoastalPlaces(node, beaches, places, 2), null);
 });
 
-test("labelNodeFromRegister respects a custom maxKm radius", () => {
+test("labelNodeFromCoastalPlaces respects a custom maxKm radius", () => {
   const node = { id: "n3", latitude: 51.5, longitude: -9.5 };
   // ~1.11km away
   const beaches = [{ name: "Near Beach", latitude: 51.51, longitude: -9.5 }];
-  assert.equal(labelNodeFromRegister(node, beaches, 1), null);
-  assert.equal(labelNodeFromRegister(node, beaches, 2), "Near Beach");
+  assert.equal(labelNodeFromCoastalPlaces(node, beaches, [], 1), null);
+  assert.equal(labelNodeFromCoastalPlaces(node, beaches, [], 2), "Near Beach");
 });
 
-test("labelNodeFromRegister returns null for an empty beach list", () => {
+test("labelNodeFromCoastalPlaces returns null when both beaches and places are empty", () => {
   const node = { id: "n4", latitude: 51.5, longitude: -9.5 };
-  assert.equal(labelNodeFromRegister(node, []), null);
+  assert.equal(labelNodeFromCoastalPlaces(node, [], []), null);
 });
 
-test("BEACH_NAME_RADIUS_KM default matches the documented 2km naming radius", () => {
-  assert.equal(BEACH_NAME_RADIUS_KM, 2);
+// Task 24: the core fix. A node with no register beach within 2km but a GeoNames coastal
+// place (town/harbour/etc) that close is now KEPT and named after that place, instead of
+// being dropped as offshore — this is exactly the real Schull node case (2.2km from Schull
+// town, ~18km from any bathing beach) validation found predicts well (18:35 vs a verified
+// real 18:37) but Task 21's beaches-only rule wrongly dropped.
+
+test("labelNodeFromCoastalPlaces names a node by a nearby GeoNames place when no beach is close", () => {
+  const node = { id: "schull-node", latitude: 51.5245, longitude: -9.548 }; // ~2.1km from Schull town
+  const beaches = [{ name: "Tragumna", latitude: 51.50148784, longitude: -9.2658542 }]; // far away
+  const places = [{ name: "Schull", latitude: 51.52487, longitude: -9.54798, kind: "town" }];
+  assert.equal(labelNodeFromCoastalPlaces(node, beaches, places), "Schull");
+});
+
+test("labelNodeFromCoastalPlaces prefers a beach name over a closer-but-still-in-range place", () => {
+  const node = { id: "n5", latitude: 51.5, longitude: -9.5 };
+  // Place is nearer than beach, but the beach is still within maxKm — beach wins.
+  const places = [{ name: "Some Locality", latitude: 51.501, longitude: -9.5, kind: "locality" }]; // ~0.11km
+  const beaches = [{ name: "Some Beach", latitude: 51.515, longitude: -9.5 }]; // ~1.67km, still <=2km
+  assert.equal(labelNodeFromCoastalPlaces(node, beaches, places, 2), "Some Beach");
+});
+
+test("COASTAL_NAME_RADIUS_KM default matches the documented 2km keep/naming radius", () => {
+  assert.equal(COASTAL_NAME_RADIUS_KM, 2);
 });

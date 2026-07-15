@@ -14,6 +14,10 @@ node_modules/
 # see that file's header for the erddap.marine.ie re-download instructions)
 data/*.csv
 
+# Raw GeoNames Ireland country dump (regenerate via scripts/build-places.mjs)
+data/IE.zip
+data/IE.txt
+
 # Capacitor web assembly output (regenerate via `npm run build:www`)
 www/
 

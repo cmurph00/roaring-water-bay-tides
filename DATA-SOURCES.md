@@ -28,16 +28,19 @@ Licenses present: cc-by-4.0.
 ## EPA/Marine Institute beach tide model (West Cork)
 
 - **EPA / Marine Institute** (Ireland, CC-BY-4.0) — via the Marine Institute ERDDAP server
-  at https://erddap.marine.ie/erddap/ (`imiTidePredictionEpa` dataset). Covers 15 named
-  West Cork bathing-beach tide-prediction points, each derived from its own EPA
-  bathing-water hydrodynamic model node's continuous `sea_surface_height` output —
-  high/low extremes extracted directly from that node (not resolved to a distant real
-  gauge) and refined by parabolic interpolation to sub-sample accuracy (the model is
-  sampled every 10 minutes), for 2026-2028. Every node is named by proximity to a
-  registered bathing-water beach (within 2km) — a node with no register beach that close
-  is genuinely offshore and is dropped rather than mislabelled with a nearby town's name
-  (32 candidate nodes fall in the West Cork bbox; 17 are dropped as offshore). Baltimore,
-  Schull, Crookhaven and Cape Clear — none of which has a nearby real tide gauge or is
-  itself on the bathing-water register — remain searchable via `data/named-spots.json`,
-  resolving at search-time to whichever kept prediction point (EPA or real gauge) is
-  actually closest. Regenerate via `node scripts/build-epa.mjs`.
+  at https://erddap.marine.ie/erddap/ (`imiTidePredictionEpa` dataset). Covers 32
+  named West Cork tide-prediction points, each derived from its own EPA bathing-water
+  hydrodynamic model node's continuous `sea_surface_height` output — high/low extremes
+  extracted directly from that node (not resolved to a distant real gauge), for
+  2026-2028. A node is kept and named whenever it's within 2km of a registered bathing
+  beach or a GeoNames coastal place (town/harbour/bay/...); only genuinely offshore
+  nodes are dropped. Regenerate via `node scripts/build-epa.mjs`.
+
+## GeoNames coastal-place gazetteer
+
+- **GeoNames** (CC-BY-4.0) — https://www.geonames.org/ , via the Ireland country dump
+  (https://download.geonames.org/export/dump/IE.zip). This product uses data from
+  GeoNames. Covers 2430 named coastal places (towns, harbours, bays, coves,
+  islands, ...) within ~8km of a real tide-prediction source, used for search only —
+  a place resolves to the nearest real prediction station (see src/ui.js), not to
+  GeoNames data. Regenerate via `node scripts/build-places.mjs`.

@@ -7,6 +7,7 @@ import {
   distinctCountries,
   filterByCountry,
   searchBeaches,
+  searchPlaces,
 } from "../src/location.js";
 
 const stations = [
@@ -72,4 +73,36 @@ test("searchBeaches returns [] for an empty or whitespace-only query", () => {
 
 test("searchBeaches returns [] when no beach name matches", () => {
   assert.deepEqual(searchBeaches("nowhere", beaches), []);
+});
+
+// searchPlaces (Task 24): the GeoNames coastal-place gazetteer's search — same
+// name-substring contract as searchBeaches, plus matching a place's alternate names.
+
+const places = [
+  { name: "Schull", latitude: 51.52487, longitude: -9.54798, kind: "town", alt: ["An Scoil", "Skull"] },
+  { name: "Sherkin Island", latitude: 51.46727, longitude: -9.41906, kind: "island", alt: ["Inis Arcain", "Inis Arcáin"] },
+  { name: "Cape Clear", latitude: 51.42556, longitude: -9.51889, kind: "cape" },
+];
+
+test("searchPlaces matches by name, case-insensitive substring", () => {
+  assert.deepEqual(searchPlaces("schu", places).map((p) => p.name), ["Schull"]);
+  assert.deepEqual(searchPlaces("SCHU", places).map((p) => p.name), ["Schull"]);
+});
+
+test("searchPlaces also matches by alternate name", () => {
+  assert.deepEqual(searchPlaces("skull", places).map((p) => p.name), ["Schull"]);
+  assert.deepEqual(searchPlaces("arcain", places).map((p) => p.name), ["Sherkin Island"]);
+});
+
+test("searchPlaces works for a place with no `alt` field at all", () => {
+  assert.deepEqual(searchPlaces("cape clear", places).map((p) => p.name), ["Cape Clear"]);
+});
+
+test("searchPlaces returns [] for an empty or whitespace-only query", () => {
+  assert.deepEqual(searchPlaces("", places), []);
+  assert.deepEqual(searchPlaces("   ", places), []);
+});
+
+test("searchPlaces returns [] when nothing matches name or alt", () => {
+  assert.deepEqual(searchPlaces("nowhere", places), []);
 });

@@ -61,7 +61,7 @@ function toIndexEntry(s) {
  * data/mi-stations.json / data/beaches.json, or null when that dataset doesn't exist), so a
  * `build:data` rerun reproduces those sections instead of dropping them.
  */
-export function buildAttribution({ stationCount, licenses, miCount, beachCount, epaCount = null }) {
+export function buildAttribution({ stationCount, licenses, miCount, beachCount, epaCount = null, placesCount = null }) {
   let attribution =
     `# Data Sources\n\n` +
     `Tide station harmonic constituents used in this app:\n\n` +
@@ -99,8 +99,20 @@ export function buildAttribution({ stationCount, licenses, miCount, beachCount, 
       `  named West Cork tide-prediction points, each derived from its own EPA bathing-water\n` +
       `  hydrodynamic model node's continuous \`sea_surface_height\` output — high/low extremes\n` +
       `  extracted directly from that node (not resolved to a distant real gauge), for\n` +
-      `  2026-2028. Includes named entries for Baltimore, Schull, Crookhaven and Cape Clear,\n` +
-      `  none of which has a nearby real tide gauge. Regenerate via \`node scripts/build-epa.mjs\`.\n`;
+      `  2026-2028. A node is kept and named whenever it's within 2km of a registered bathing\n` +
+      `  beach or a GeoNames coastal place (town/harbour/bay/...); only genuinely offshore\n` +
+      `  nodes are dropped. Regenerate via \`node scripts/build-epa.mjs\`.\n`;
+  }
+
+  if (placesCount != null) {
+    attribution +=
+      `\n## GeoNames coastal-place gazetteer\n\n` +
+      `- **GeoNames** (CC-BY-4.0) — https://www.geonames.org/ , via the Ireland country dump\n` +
+      `  (https://download.geonames.org/export/dump/IE.zip). This product uses data from\n` +
+      `  GeoNames. Covers ${placesCount} named coastal places (towns, harbours, bays, coves,\n` +
+      `  islands, ...) within ~8km of a real tide-prediction source, used for search only —\n` +
+      `  a place resolves to the nearest real prediction station (see src/ui.js), not to\n` +
+      `  GeoNames data. Regenerate via \`node scripts/build-places.mjs\`.\n`;
   }
 
   return attribution;
@@ -147,6 +159,7 @@ async function build() {
   const miCount = await indexCount("data/mi-stations.json");
   const beachCount = await indexCount("data/beaches.json");
   const epaCount = await indexCount("data/epa-stations.json");
+  const placesCount = await indexCount("data/places.json");
 
   await rm("data", { recursive: true, force: true });
   await mkdir("data/stations", { recursive: true });
@@ -157,7 +170,14 @@ async function build() {
   }
 
   const sources = new Set(kept.map((s) => (typeof s.license === "string" ? s.license : s.license?.type ?? "public-domain")));
-  const attribution = buildAttribution({ stationCount: kept.length, licenses: [...sources], miCount, beachCount, epaCount });
+  const attribution = buildAttribution({
+    stationCount: kept.length,
+    licenses: [...sources],
+    miCount,
+    beachCount,
+    epaCount,
+    placesCount,
+  });
   await writeFile("DATA-SOURCES.md", attribution);
 
   await stampCacheVersion(kept.length);

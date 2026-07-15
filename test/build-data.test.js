@@ -100,7 +100,7 @@ test("buildAttribution appends the EPA tide-model section when epaCount is prese
   const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: null, beachCount: null, epaCount: 32 });
   assert.match(text, /## EPA\/Marine Institute beach tide model \(West Cork\)/);
   assert.match(text, /Covers 32\s*\n?\s*named West Cork tide-prediction points/);
-  assert.match(text, /Baltimore, Schull, Crookhaven and Cape Clear/);
+  assert.match(text, /within 2km of a registered bathing\s*\n?\s*beach or a GeoNames coastal place/);
 });
 
 test("buildAttribution includes MI, EPA-beaches, and EPA tide-model sections together, in that order", () => {
@@ -109,4 +109,41 @@ test("buildAttribution includes MI, EPA-beaches, and EPA tide-model sections tog
   const beachIdx = text.indexOf("EPA (Ireland) named bathing-water beaches");
   const epaIdx = text.indexOf("EPA/Marine Institute beach tide model");
   assert.ok(miIdx < beachIdx && beachIdx < epaIdx, "sections must appear in introduction order");
+});
+
+// placesCount (Task 24): the GeoNames coastal-place gazetteer section, same durability
+// pattern as the others — omitted when placesCount is null/absent, appended when present.
+
+test("buildAttribution omits the GeoNames section when placesCount is absent", () => {
+  const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: null, beachCount: null });
+  assert.doesNotMatch(text, /GeoNames/);
+});
+
+test("buildAttribution appends the GeoNames section when placesCount is present", () => {
+  const text = buildAttribution({
+    stationCount: 833,
+    licenses: ["cc-by-4.0"],
+    miCount: null,
+    beachCount: null,
+    placesCount: 2430,
+  });
+  assert.match(text, /## GeoNames coastal-place gazetteer/);
+  assert.match(text, /Covers 2430 named coastal places/);
+  assert.match(text, /This product uses data from\s*\n?\s*GeoNames/);
+});
+
+test("buildAttribution includes MI, EPA-beaches, EPA tide-model, and GeoNames sections together, in that order", () => {
+  const text = buildAttribution({
+    stationCount: 833,
+    licenses: ["cc-by-4.0"],
+    miCount: 38,
+    beachCount: 150,
+    epaCount: 32,
+    placesCount: 2430,
+  });
+  const miIdx = text.indexOf("Marine Institute (Ireland) offline predictions");
+  const beachIdx = text.indexOf("EPA (Ireland) named bathing-water beaches");
+  const epaIdx = text.indexOf("EPA/Marine Institute beach tide model");
+  const placesIdx = text.indexOf("GeoNames coastal-place gazetteer");
+  assert.ok(miIdx < beachIdx && beachIdx < epaIdx && epaIdx < placesIdx, "sections must appear in introduction order");
 });

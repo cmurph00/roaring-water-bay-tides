@@ -49,6 +49,19 @@ export function searchBeaches(query, beaches) {
   return beaches.filter((b) => b.name.toLowerCase().includes(q));
 }
 
+// Same search-only-alias contract as searchBeaches above, for the GeoNames coastal-place
+// gazetteer (data/places.json, scripts/build-places.mjs — towns, harbours, bays, coves,
+// islands, ...). Also matches a place's alternate names (`alt`, e.g. an Irish-language name
+// like Sherkin Island's "Inis Arcáin") so a user typing either form finds it — the one way
+// this differs from searchBeaches' plain name-only match.
+export function searchPlaces(query, places) {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return places.filter(
+    (p) => p.name.toLowerCase().includes(q) || (p.alt ?? []).some((a) => a.toLowerCase().includes(q))
+  );
+}
+
 // Isolated here so the Phase 2 Capacitor wrap swaps only this function. On a native
 // Capacitor shell (globalThis.Capacitor.isNativePlatform() true, with the Geolocation
 // plugin registered), use the native plugin via the Capacitor GLOBAL — never a bare

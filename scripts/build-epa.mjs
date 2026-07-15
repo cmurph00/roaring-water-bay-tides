@@ -13,15 +13,24 @@
 // data/mi/*.json (see scripts/build-mi.mjs) — src/resolver.js's existing
 // `Array.isArray(station.tides)` branch serves these unchanged.
 //
-// Task 21 fix: naming is now driven purely by proximity to a REGISTERED bathing-water beach
-// (data/beaches.json, labelNodeFromRegister below, 2km radius) — not by hand-picked
-// "village centre" coordinates. A node with no register beach within 2km is genuinely
-// OFFSHORE relative to the bathing-water register (verified case: the old "Baltimore" node
-// was ~4km out / ~12km from any beach) and is dropped entirely rather than mislabelled with
-// a nearby town's name. Baltimore/Schull/Crookhaven/Cape Clear remain reachable as
-// *searchable named aliases* — see data/named-spots.json + src/ui.js — resolving at
-// click-time to the best non-offshore prediction point (kept EPA beach-model node or
-// MI/TICON gauge), never to a dropped offshore node.
+// Task 21 fix: naming is driven by proximity to a REGISTERED bathing-water beach
+// (data/beaches.json, 2km radius) — not by hand-picked "village centre" coordinates.
+//
+// Task 24 fix: Task 21's keep-rule (drop a node with no register beach within 2km) was
+// validated against 14 real pro-app high-water times and found too aggressive — it dropped
+// the Schull node (2.2km from Schull *town*, ~18km from any bathing beach) even though it
+// predicts well (18:35 vs a verified real 18:37). "Far from a swimming beach" isn't the same
+// test as "offshore". The keep-rule is now: keep a node if it's within COASTAL_NAME_RADIUS_KM
+// of ANY coastal place — a register beach (data/beaches.json) OR a GeoNames coastal place
+// (data/places.json, scripts/build-places.mjs — towns, harbours, bays, coves, islands, ...).
+// Only a node more than that radius from every such place is genuinely offshore (verified
+// case: the old "Baltimore" node was ~4km out / ~12km from any beach OR town) and is dropped.
+// labelNodeFromCoastalPlaces below prefers a beach name when one is in range (a beach is the
+// more specific, tide-relevant label), falling back to the nearest town/harbour/etc name.
+// Baltimore/Schull/Crookhaven/Cape Clear (Task 21's hand-maintained named-spots.json, now
+// deleted — Task 24) are searchable like any other GeoNames place (src/ui.js), and where
+// they're close enough to their own EPA node (Schull is), the node itself now carries that
+// name directly rather than needing a separate alias-resolution hop.
 //
 // Scope: West Cork bbox only for now (BBOX below). Deliberately NOT the full 219-node EPA
 // catalogue, to keep the offline bundle small; widen BBOX/WINDOW_YEARS to cover more of the
@@ -32,7 +41,7 @@ import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { haversineKm } from "../src/location.js";
 
 const ERDDAP_BASE = "https://erddap.marine.ie/erddap/tabledap/imiTidePredictionEpa.csv";
-const NODE_LIST_URL = `${ERDDAP_BASE}?stationID,longitude,latitude&distinct()`;
+export const NODE_LIST_URL = `${ERDDAP_BASE}?stationID,longitude,latitude&distinct()`;
 
 // West Cork only, for now — whatever EPA nodes fall in the same box. Generalizable later:
 // widen this + WINDOW_YEARS.
@@ -43,7 +52,7 @@ export const BBOX = { minLat: 51.3, maxLat: 51.95, minLon: -10.35, maxLon: -8.0 
 export const WINDOW_YEARS = [2026, 2027, 2028];
 
 const MIN_PROMINENCE = 0.15; // metres — rejects noise/flat-spot wobbles, see extractExtrema
-export const BEACH_NAME_RADIUS_KM = 2; // register-beach naming radius — beyond this, a node is OFFSHORE
+export const COASTAL_NAME_RADIUS_KM = 2; // keep/naming radius — beyond this of every coastal place, a node is OFFSHORE
 const REQUEST_DELAY_MS = 150; // politeness delay between sequential ERDDAP requests
 
 export function inBbox(lat, lon, bbox = BBOX) {
@@ -216,6 +225,20 @@ async function fetchText(url, attempt = 0) {
   return res.text();
 }
 
+/**
+ * Fetches the full ERDDAP node list and returns just the West Cork bbox candidates — every
+ * node ERDDAP has data for in the box, independent of any naming/keep decision. Exported so
+ * scripts/build-places.mjs can use the same candidate points as a coastal "prediction
+ * source" for its own proximity filter: the already-published data/epa-stations.json only
+ * contains nodes that already survived labelNodeFromCoastalPlaces (below), which itself
+ * depends on data/places.json — using the raw candidate list instead of the derived index
+ * breaks that circular dependency (see build-places.mjs's loadPredictionSources).
+ */
+export async function fetchBboxNodes() {
+  const allNodes = parseNodeListCsv(await fetchText(NODE_LIST_URL));
+  return allNodes.filter((n) => inBbox(n.latitude, n.longitude));
+}
+
 function yearSeriesUrl(nodeId, year) {
   // ERDDAP's constraint syntax uses raw > / < — proven working via manual curl probe
   // (only the comparison operators need escaping here, not the "=" that follows them).
@@ -241,31 +264,48 @@ function sanitizeId(id) {
   return id.replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
-/**
- * Resolves the display name for an EPA node purely by proximity to the EPA bathing-water
- * register (data/beaches.json): the nearest register beach within `maxKm`, or `null` if none
- * is that close. `null` means the node is OFFSHORE relative to the register and must be
- * dropped from the shipped prediction/search set (see build() below) — never given a town
- * or beach name it doesn't earn. Pure/no I/O so it's directly unit-testable.
- */
-export function labelNodeFromRegister(node, beaches, maxKm = BEACH_NAME_RADIUS_KM) {
-  let nearestBeach = null;
+// Finds the nearest entry to `node` in `places` (each a {name, latitude, longitude, ...}),
+// returning { name, distanceKm } if one is within `maxKm`, else null. Shared by
+// labelNodeFromCoastalPlaces below for both the beaches.json and places.json passes.
+function nearestWithinRadius(node, places, maxKm) {
+  let nearest = null;
   let nearestKm = Infinity;
-  for (const b of beaches) {
-    const d = haversineKm({ lat: node.latitude, lon: node.longitude }, { lat: b.latitude, lon: b.longitude });
+  for (const p of places) {
+    const d = haversineKm({ lat: node.latitude, lon: node.longitude }, { lat: p.latitude, lon: p.longitude });
     if (d < nearestKm) {
       nearestKm = d;
-      nearestBeach = b;
+      nearest = p;
     }
   }
-  return nearestBeach && nearestKm <= maxKm ? nearestBeach.name : null;
+  return nearest && nearestKm <= maxKm ? { name: nearest.name, distanceKm: nearestKm } : null;
 }
 
-async function loadBeaches() {
+/**
+ * Resolves the display name for an EPA node by proximity to any coastal place — a REGISTERED
+ * bathing-water beach (data/beaches.json) OR a GeoNames coastal place (data/places.json:
+ * towns, harbours, bays, coves, islands, ...) — within `maxKm`. A beach match is preferred
+ * when one is in range (more specific/tide-relevant than a generic town name); otherwise the
+ * nearest place is used. Returns `null` if nothing qualifies, meaning the node is genuinely
+ * OFFSHORE and must be dropped from the shipped prediction/search set (see build() below) —
+ * never given a name it doesn't earn. Pure/no I/O so it's directly unit-testable.
+ *
+ * Task 24: replaces the Task 21 labelNodeFromRegister, which checked beaches.json only — that
+ * rule wrongly dropped the Schull node (2.2km from Schull town, ~18km from any beach) even
+ * though it predicts well; "no bathing beach nearby" isn't the same test as "offshore".
+ */
+export function labelNodeFromCoastalPlaces(node, beaches, places, maxKm = COASTAL_NAME_RADIUS_KM) {
+  const nearestBeach = nearestWithinRadius(node, beaches, maxKm);
+  if (nearestBeach) return nearestBeach.name;
+  const nearestPlace = nearestWithinRadius(node, places, maxKm);
+  return nearestPlace ? nearestPlace.name : null;
+}
+
+async function loadJsonOrEmpty(path, warning) {
   try {
-    return JSON.parse(await readFile("data/beaches.json", "utf8"));
+    return JSON.parse(await readFile(path, "utf8"));
   } catch {
-    return []; // beaches.json is an optional naming enhancement, not a hard dependency
+    if (warning) console.warn(warning); // optional naming enhancement, not a hard dependency
+    return [];
   }
 }
 
@@ -280,20 +320,27 @@ async function build() {
     process.exit(1);
   }
 
-  const beaches = await loadBeaches();
-  if (beaches.length === 0) {
-    console.warn("data/beaches.json is empty/missing — every node will be labelled OFFSHORE and dropped.");
+  const [beaches, places] = await Promise.all([
+    loadJsonOrEmpty("data/beaches.json", "data/beaches.json is empty/missing — beach naming disabled for this run."),
+    loadJsonOrEmpty(
+      "data/places.json",
+      "data/places.json is empty/missing — run `node scripts/build-places.mjs` first; every node lacking a nearby " +
+        "register beach will be labelled OFFSHORE and dropped."
+    ),
+  ]);
+  if (beaches.length === 0 && places.length === 0) {
+    console.warn("Both data/beaches.json and data/places.json are empty/missing — every node will be dropped as OFFSHORE.");
   }
 
-  // Label every bbox node against the register FIRST (cheap, no network) — a node with no
-  // register beach within BEACH_NAME_RADIUS_KM is offshore and is skipped entirely, so we
-  // never spend an ERDDAP fetch on data we're going to throw away.
-  const labelled = bboxNodes.map((node) => ({ node, name: labelNodeFromRegister(node, beaches) }));
+  // Label every bbox node against beaches+places FIRST (cheap, no network) — a node with no
+  // coastal place (beach or GeoNames place) within COASTAL_NAME_RADIUS_KM is offshore and is
+  // skipped entirely, so we never spend an ERDDAP fetch on data we're going to throw away.
+  const labelled = bboxNodes.map((node) => ({ node, name: labelNodeFromCoastalPlaces(node, beaches, places) }));
   const nodes = labelled.filter((n) => n.name !== null);
   const offshoreDropped = labelled.length - nodes.length;
   console.log(
-    `${nodes.length} node(s) within ${BEACH_NAME_RADIUS_KM}km of a register beach (kept); ` +
-      `${offshoreDropped} offshore node(s) dropped (no register beach that close).`
+    `${nodes.length} node(s) within ${COASTAL_NAME_RADIUS_KM}km of a coastal place (kept); ` +
+      `${offshoreDropped} offshore node(s) dropped (no beach or place that close).`
   );
 
   // Clean the directory first — otherwise a node dropped as OFFSHORE on this run (or

@@ -2,6 +2,7 @@ import {
   nearestStation,
   searchStations,
   searchBeaches,
+  searchPlaces,
   detectLocation,
   distinctCountries,
   filterByCountry,
@@ -16,7 +17,7 @@ const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
 const EPA_INDEX_URL = "./data/epa-stations.json";
 const BEACHES_URL = "./data/beaches.json";
-const NAMED_SPOTS_URL = "./data/named-spots.json";
+const PLACES_URL = "./data/places.json";
 const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local entry are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
@@ -61,12 +62,15 @@ let index = [];
 // their nearest real station in `index` at click-time. Never shown in the country
 // dropdown or the geolocation "use my location" flow, only in free-text search results.
 let beaches = [];
-// Named town/village spots (Baltimore/Schull/Crookhaven/Cape Clear, data/named-spots.json)
-// — same search-only-alias contract as `beaches` above (same {name, latitude, longitude}
-// shape, reused via searchBeaches), but for places users search for that aren't themselves
-// on the EPA bathing-water register. Resolve via nearestStation over the merged prediction
-// `index`, same as beaches — see wireSearch/renderStationList below.
-let namedSpots = [];
+// GeoNames coastal-place gazetteer (data/places.json, scripts/build-places.mjs — towns,
+// harbours, bays, coves, islands, ...) — same search-only-alias contract as `beaches` above
+// (same {name, latitude, longitude, kind, alt?} shape, matched via searchPlaces so alternate
+// names are also searchable), for places users search for that aren't themselves on the EPA
+// bathing-water register. Resolve via nearestStation over the merged prediction `index`,
+// same as beaches — see wireSearch/renderStationList below. Superseded the old
+// hand-maintained data/named-spots.json (Task 24) — Baltimore/Schull/Crookhaven/Cape Clear
+// are now just ordinary entries in this gazetteer, like any other coastal place.
+let places = [];
 // The currently-selected station (entry + distance + optional resolved-from locality
 // name), kept so the day-count control can re-render without re-running
 // search/geolocation/selection.
@@ -103,12 +107,12 @@ async function loadIndex() {
     beaches = [];
   }
 
-  // Named town/village spots — same optional-enhancement contract as beaches above.
+  // GeoNames coastal-place gazetteer — same optional-enhancement contract as beaches above.
   try {
-    const res = await fetch(NAMED_SPOTS_URL);
-    namedSpots = res.ok ? await res.json() : [];
+    const res = await fetch(PLACES_URL);
+    places = res.ok ? await res.json() : [];
   } catch {
-    namedSpots = [];
+    places = [];
   }
 }
 
@@ -260,7 +264,7 @@ function wireLocalityClick(li, item, notFoundMessage) {
   });
 }
 
-function renderStationList(stations, beachResults = [], namedSpotResults = []) {
+function renderStationList(stations, beachResults = [], placeResults = []) {
   const list = document.getElementById("search-results");
   list.innerHTML = "";
   for (const m of stations.slice(0, MAX_RESULTS)) {
@@ -280,10 +284,10 @@ function renderStationList(stations, beachResults = [], namedSpotResults = []) {
     wireLocalityClick(li, b, "Couldn't find a nearby tide gauge for this beach.");
     list.appendChild(li);
   }
-  for (const s of namedSpotResults.slice(0, MAX_RESULTS)) {
+  for (const p of placeResults.slice(0, MAX_RESULTS)) {
     const li = document.createElement("li");
-    li.textContent = `📍 ${s.name}`;
-    wireLocalityClick(li, s, "Couldn't find a nearby tide gauge for this spot.");
+    li.textContent = `📍 ${p.name}`;
+    wireLocalityClick(li, p, "Couldn't find a nearby tide gauge for this place.");
     list.appendChild(li);
   }
 }
@@ -321,13 +325,13 @@ function wireSearch() {
   const input = document.getElementById("station-search");
   input.addEventListener("input", () => {
     const stationResults = searchStations(input.value, searchScope());
-    // Beaches and named spots are both global search-only alias layers — not scoped
-    // by #country-filter (spec: don't add them to the country dropdown or its
-    // scoping). Named spots share the exact same {name, latitude, longitude} search
-    // contract as beaches, so searchBeaches (name-substring match) is reused as-is.
+    // Beaches and the GeoNames place gazetteer are both global search-only alias
+    // layers — not scoped by #country-filter (spec: don't add them to the country
+    // dropdown or its scoping). Places also match on alternate names (searchPlaces),
+    // unlike the plain name-only searchBeaches.
     const beachResults = searchBeaches(input.value, beaches);
-    const namedSpotResults = searchBeaches(input.value, namedSpots);
-    renderStationList(stationResults, beachResults, namedSpotResults);
+    const placeResults = searchPlaces(input.value, places);
+    renderStationList(stationResults, beachResults, placeResults);
   });
 }
 
