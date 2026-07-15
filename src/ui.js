@@ -1,6 +1,7 @@
 import {
   nearestStation,
   searchStations,
+  searchBeaches,
   detectLocation,
   distinctCountries,
   filterByCountry,
@@ -12,6 +13,7 @@ import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from 
 
 const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
+const BEACHES_URL = "./data/beaches.json";
 const MI_OVERLAP_KM = 3; // TICON entries within this radius of an MI station are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
@@ -34,8 +36,13 @@ export function mergeStationIndexes(ticon, mi) {
 }
 
 let index = [];
-// The currently-selected station (entry + distance), kept so the day-count
-// control can re-render without re-running search/geolocation/selection.
+// Named localities (e.g. EPA-registered beaches) — search-only aliases that resolve to
+// their nearest real station in `index` at click-time. Never shown in the country
+// dropdown or the geolocation "use my location" flow, only in free-text search results.
+let beaches = [];
+// The currently-selected station (entry + distance + optional resolved-from locality
+// name), kept so the day-count control can re-render without re-running
+// search/geolocation/selection.
 let currentSelection = null;
 
 async function loadIndex() {
@@ -44,6 +51,17 @@ async function loadIndex() {
     fetch(MI_INDEX_URL).then((r) => r.json()),
   ]);
   index = mergeStationIndexes(ticon, mi);
+
+  // Beaches are an optional enhancement layer — a missing/404 data/beaches.json (e.g. an
+  // older cached build, or the file simply not having been generated) must not break the
+  // rest of the app, so default to [] rather than letting the rejection/parse error
+  // propagate out of loadIndex/init.
+  try {
+    const res = await fetch(BEACHES_URL);
+    beaches = res.ok ? await res.json() : [];
+  } catch {
+    beaches = [];
+  }
 }
 
 async function loadStation(entry) {
@@ -51,10 +69,10 @@ async function loadStation(entry) {
   return fetch(url).then((r) => r.json());
 }
 
-async function showStation(entry, distanceKm) {
+async function showStation(entry, distanceKm, locality) {
   localStorage.setItem(LS_KEY, entry.id);
   const station = await loadStation(entry);
-  currentSelection = { entry, distanceKm };
+  currentSelection = { entry, distanceKm, locality };
 
   const days = getDayCount();
   const now = new Date();
@@ -72,7 +90,7 @@ async function showStation(entry, distanceKm) {
     .filter((g) => g.day >= todayKey)
     .slice(0, days);
 
-  renderHeader(entry, distanceKm, station);
+  renderHeader(entry, distanceKm, station, locality);
   const emptyMessage =
     station.source === "mi"
       ? "Marine Institute predictions cover 2026–2028. Pick a date in range."
@@ -105,10 +123,19 @@ function geolocationErrorMessage(err) {
   }
 }
 
-function renderHeader(entry, distanceKm, station) {
+// `locality` is set only when the current selection was reached via a beach search
+// alias (see renderStationList's beach click handler) — it names the searched-for
+// beach, distinct from `entry`, the real station its tides actually come from.
+function renderHeader(entry, distanceKm, station, locality) {
   const el = document.getElementById("station-header");
+  const datum = `heights vs ${station.chart_datum ?? "chart datum"}`;
+  if (locality) {
+    const dist = distanceKm != null ? `, ${fmtDistance(distanceKm)}` : "";
+    el.textContent = `${locality} → nearest gauge: ${entry.name}${dist} · ${datum}`;
+    return;
+  }
   const dist = distanceKm != null ? ` · nearest gauge ${fmtDistance(distanceKm)} away` : "";
-  el.textContent = `${entry.name}, ${entry.country}${dist} · heights vs ${station.chart_datum ?? "chart datum"}`;
+  el.textContent = `${entry.name}, ${entry.country}${dist} · ${datum}`;
 }
 
 function renderTideTable(tides, timezone) {
@@ -146,18 +173,43 @@ function renderDays(groups, timezone, emptyMessage = "No tide data for this rang
   }
 }
 
-function renderStationList(stations) {
+// Closes the search dropdown and clears the query input — shared by both the
+// station and beach result click handlers below.
+function closeSearchDropdown() {
+  const list = document.getElementById("search-results");
+  list.innerHTML = "";
+  const input = document.getElementById("station-search");
+  if (input) input.value = "";
+}
+
+function renderStationList(stations, beachResults = []) {
   const list = document.getElementById("search-results");
   list.innerHTML = "";
   for (const m of stations.slice(0, MAX_RESULTS)) {
     const li = document.createElement("li");
     li.textContent = `${m.name}, ${m.country}`;
     li.addEventListener("click", () => {
-      // Close the dropdown and clear the query as soon as a station is chosen.
-      list.innerHTML = "";
-      const input = document.getElementById("station-search");
-      if (input) input.value = "";
+      closeSearchDropdown();
       showStation(m, null).catch(() => {
+        renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+      });
+    });
+    list.appendChild(li);
+  }
+  for (const b of beachResults.slice(0, MAX_RESULTS)) {
+    const li = document.createElement("li");
+    li.textContent = `🏖 ${b.name}, ${b.country}`;
+    li.addEventListener("click", () => {
+      closeSearchDropdown();
+      // Beaches are search-only aliases: resolve to the nearest real prediction
+      // station in the merged index, then show that station with the beach's
+      // own name threaded through as `locality` (see renderHeader).
+      const nearest = nearestStation(b.latitude, b.longitude, index);
+      if (!nearest) {
+        renderError("Couldn't find a nearby tide gauge for this beach.");
+        return;
+      }
+      showStation(nearest.station, nearest.distanceKm, b.name).catch(() => {
         renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
       });
     });
@@ -197,7 +249,11 @@ function searchScope() {
 function wireSearch() {
   const input = document.getElementById("station-search");
   input.addEventListener("input", () => {
-    renderStationList(searchStations(input.value, searchScope()));
+    const stationResults = searchStations(input.value, searchScope());
+    // Beaches are a global search-only alias layer — not scoped by #country-filter
+    // (spec: don't add beaches to the country dropdown or its scoping).
+    const beachResults = searchBeaches(input.value, beaches);
+    renderStationList(stationResults, beachResults);
   });
 }
 
@@ -232,7 +288,7 @@ function wireDayCount() {
   select.addEventListener("change", () => {
     localStorage.setItem(LS_DAYS_KEY, select.value);
     if (currentSelection) {
-      showStation(currentSelection.entry, currentSelection.distanceKm).catch(() => {
+      showStation(currentSelection.entry, currentSelection.distanceKm, currentSelection.locality).catch(() => {
         renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
       });
     }

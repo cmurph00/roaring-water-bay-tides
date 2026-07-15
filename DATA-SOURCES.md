@@ -16,3 +16,11 @@ Licenses present: cc-by-4.0.
   precomputed offline hi-lo predictions for 2026-2028, heights relative to OD Malin chart
   datum. Regenerate via `node scripts/build-mi.mjs` (raw CSVs are gitignored source data,
   not committed).
+
+## EPA (Ireland) named bathing-water beaches
+
+- **EPA** (Environmental Protection Agency, Ireland, CC-BY-4.0) — via the EPA GeoServer WFS
+  at https://gis.epa.ie/geoserver/ . Covers 150 named bathing-water beaches from the
+  national bathing-water register, used for beach names/locations only — tide predictions
+  come from the app's nearest real prediction station (see src/ui.js), not from EPA data.
+  Regenerate via `node scripts/build-beaches.mjs`.

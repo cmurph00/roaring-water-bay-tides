@@ -6,6 +6,7 @@ import {
   searchStations,
   distinctCountries,
   filterByCountry,
+  searchBeaches,
 } from "../src/location.js";
 
 const stations = [
@@ -51,4 +52,24 @@ test("filterByCountry returns [] for a falsy country (All countries)", () => {
   assert.deepEqual(filterByCountry(stations, ""), []);
   assert.deepEqual(filterByCountry(stations, null), []);
   assert.deepEqual(filterByCountry(stations, undefined), []);
+});
+
+const beaches = [
+  { name: "Tragumna", latitude: 51.52, longitude: -9.34, classification: "Excellent", url: "https://example.org/tragumna", country: "Ireland", type: "beach" },
+  { name: "Sandycove", latitude: 53.2896, longitude: -6.1128, classification: "Good", url: "https://example.org/sandycove", country: "Ireland", type: "beach" },
+];
+
+test("searchBeaches matches by name, case-insensitive substring", () => {
+  assert.deepEqual(searchBeaches("trag", beaches).map((b) => b.name), ["Tragumna"]);
+  assert.deepEqual(searchBeaches("TRAG", beaches).map((b) => b.name), ["Tragumna"]);
+  assert.deepEqual(searchBeaches("cove", beaches).map((b) => b.name), ["Sandycove"]);
+});
+
+test("searchBeaches returns [] for an empty or whitespace-only query", () => {
+  assert.deepEqual(searchBeaches("", beaches), []);
+  assert.deepEqual(searchBeaches("   ", beaches), []);
+});
+
+test("searchBeaches returns [] when no beach name matches", () => {
+  assert.deepEqual(searchBeaches("nowhere", beaches), []);
 });

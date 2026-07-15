@@ -39,6 +39,16 @@ export function filterByCountry(stations, country) {
   return stations.filter((s) => s.country === country);
 }
 
+// Named localities (e.g. EPA-registered beaches) that resolve to their nearest real
+// tide-prediction station at click-time — see mergeStationIndexes/nearestStation in
+// src/ui.js. Search-only substring match, same shape as searchStations but scoped to
+// `name` only (beaches don't carry a `country` filter axis worth matching on).
+export function searchBeaches(query, beaches) {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return beaches.filter((b) => b.name.toLowerCase().includes(q));
+}
+
 // Browser-only. Isolated here so the Phase 2 Capacitor wrap swaps only this function.
 export function detectLocation() {
   return new Promise((resolve, reject) => {
