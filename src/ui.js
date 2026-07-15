@@ -4,8 +4,9 @@ import {
   searchBeaches,
   searchPlaces,
   detectLocation,
-  distinctCountries,
-  filterByCountry,
+  assignCounties,
+  distinctCounties,
+  filterByCounty,
   haversineKm,
 } from "./location.js";
 import { getTides } from "./resolver.js";
@@ -129,6 +130,11 @@ async function loadIndex() {
     places = [];
   }
 
+  // Tag each Irish station with its county (inherited from the nearest county-bearing gazetteer
+  // place) so the county filter can group/scope by it. No-op when places lack county data (an
+  // older cached build) — stations simply stay county-less and the dropdown shows only "All".
+  assignCounties(index, places);
+
   // Ireland coastline outline (Task 19 map picker) — same optional-enhancement contract:
   // a missing/404 data/ireland-outline.json must not break the rest of the app, just leave
   // the map view without a coastline (markers on a blank sea).
@@ -190,13 +196,13 @@ function renderStatus(message, className = "empty") {
 function geolocationErrorMessage(err) {
   switch (err?.code) {
     case 1: // PERMISSION_DENIED
-      return 'Location permission is off. Enable it for your browser in Settings, or search for a gauge / pick a country.';
+      return 'Location permission is off. Enable it for your browser in Settings, or search for a gauge / pick a county.';
     case 2: // POSITION_UNAVAILABLE
       return "Couldn't determine your location. Try again, or search for a gauge.";
     case 3: // TIMEOUT
       return "Location timed out. Try again, or search for a gauge.";
     default:
-      return "Couldn't get your location — search for a gauge or pick a country.";
+      return "Couldn't get your location — search for a gauge or pick a county.";
   }
 }
 
@@ -236,7 +242,7 @@ function renderHeader(entry, distanceKm, station, locality) {
     el.textContent = `${locality} → ${entry.name} (${type}${dist}) · ${datum}`;
     return;
   }
-  el.textContent = `${entry.name}, ${entry.country} (${type}${dist}) · ${datum}`;
+  el.textContent = `${entry.name}, ${entry.county || entry.country} (${type}${dist}) · ${datum}`;
 }
 
 function renderTideTable(tides, timezone) {
@@ -306,7 +312,7 @@ function renderStationList(stations, beachResults = [], placeResults = []) {
   list.innerHTML = "";
   for (const m of stations.slice(0, MAX_RESULTS)) {
     const li = document.createElement("li");
-    li.textContent = `${m.name}, ${m.country}`;
+    li.textContent = `${m.name}, ${m.county || m.country}`;
     li.addEventListener("click", () => {
       closeSearchDropdown();
       showStation(m, null).catch(() => {
@@ -329,33 +335,29 @@ function renderStationList(stations, beachResults = [], placeResults = []) {
   }
 }
 
-function selectedCountry() {
-  return document.getElementById("country-filter").value;
+function selectedCounty() {
+  return document.getElementById("county-filter").value;
 }
 
-// Sets #country-filter's value to `country` iff it's one of the select's
-// existing options (populated from distinctCountries(index) in
-// wireCountryFilter); otherwise leaves the current selection unchanged.
-// Setting .value programmatically does NOT fire a "change" event, so this
-// never triggers the change listener's renderStationList/clear side effect —
-// callers that also want the list rendered must do so explicitly.
-//
-// This is how we offline-derive a "detected country" (from the resolved
-// station's own `country` field) without any reverse-geocoding service. For
-// the Phase 2 native app, the device locale/region (app-store based) could
-// seed this instead of geolocation.
-function setCountryFilter(country) {
-  if (!country) return;
-  const select = document.getElementById("country-filter");
-  const hasOption = Array.from(select.options).some((o) => o.value === country);
+// Sets #county-filter's value to `county` iff it's one of the select's existing options
+// (populated from distinctCounties(index) in wireCountyFilter); otherwise leaves the current
+// selection unchanged. Setting .value programmatically does NOT fire a "change" event, so this
+// never triggers the change listener's renderStationList/clear side effect — callers that also
+// want the list rendered must do so explicitly. This is how we offline-derive a "detected
+// county" from the resolved station's own `county` field (assigned in loadIndex via
+// assignCounties), with no reverse-geocoding service.
+function setCountyFilter(county) {
+  if (!county) return;
+  const select = document.getElementById("county-filter");
+  const hasOption = Array.from(select.options).some((o) => o.value === county);
   if (hasOption) {
-    select.value = country;
+    select.value = county;
   }
 }
 
 function searchScope() {
-  const country = selectedCountry();
-  return country ? filterByCountry(index, country) : index;
+  const county = selectedCounty();
+  return county ? filterByCounty(index, county) : index;
 }
 
 function wireSearch() {
@@ -363,8 +365,8 @@ function wireSearch() {
   input.addEventListener("input", () => {
     const stationResults = searchStations(input.value, searchScope());
     // Beaches and the GeoNames place gazetteer are both global search-only alias
-    // layers — not scoped by #country-filter (spec: don't add them to the country
-    // dropdown or its scoping). Places also match on alternate names (searchPlaces),
+    // layers — not scoped by #county-filter (they carry no county axis). Places
+    // also match on alternate names (searchPlaces),
     // unlike the plain name-only searchBeaches.
     const beachResults = searchBeaches(input.value, beaches);
     const placeResults = searchPlaces(input.value, places);
@@ -372,17 +374,17 @@ function wireSearch() {
   });
 }
 
-function wireCountryFilter() {
-  const select = document.getElementById("country-filter");
-  for (const country of distinctCountries(index)) {
+function wireCountyFilter() {
+  const select = document.getElementById("county-filter");
+  for (const county of distinctCounties(index)) {
     const option = document.createElement("option");
-    option.value = country;
-    option.textContent = country;
+    option.value = county;
+    option.textContent = county;
     select.appendChild(option);
   }
   select.addEventListener("change", () => {
     if (select.value) {
-      renderStationList(filterByCountry(index, select.value));
+      renderStationList(filterByCounty(index, select.value));
     } else {
       document.getElementById("search-results").innerHTML = "";
     }
@@ -418,14 +420,14 @@ async function useMyLocation() {
     if (isMapViewActive()) renderMapView(); // refresh the "you" dot if the map is on screen
     const result = nearestStation(lat, lon, index);
     if (!result) {
-      renderError("Couldn't get your location — search for a gauge or pick a country.");
+      renderError("Couldn't get your location — search for a gauge or pick a county.");
       return;
     }
     const { station, distanceKm } = result;
-    // Reflect the detected station's country in the dropdown before
+    // Reflect the detected station's county in the dropdown before
     // rendering; searchScope() reads the select value, so this also scopes
-    // subsequent searches to the user's country.
-    setCountryFilter(station.country);
+    // subsequent searches to the user's county.
+    setCountyFilter(station.county);
     await showStation(station, distanceKm);
   } catch (err) {
     // Denied/unavailable/timeout → always leave a visible, actionable
@@ -506,7 +508,7 @@ export async function init() {
   initThemeToggle();
   await loadIndex();
   wireSearch();
-  wireCountryFilter();
+  wireCountyFilter();
   wireDayCount();
   wireViewToggle();
   document.getElementById("use-location").addEventListener("click", useMyLocation);
@@ -514,7 +516,7 @@ export async function init() {
   const savedId = localStorage.getItem(LS_KEY);
   const saved = index.find((s) => s.id === savedId);
   if (saved) {
-    setCountryFilter(saved.country);
+    setCountyFilter(saved.county);
     try {
       await showStation(saved, null);
     } catch {
@@ -526,6 +528,6 @@ export async function init() {
     // re-prompt on the later button tap too. Wait for an explicit tap on
     // "Use my location" instead.
     document.getElementById("station-header").textContent = "";
-    renderStatus('Tap "Use my location", pick a country, or search for a gauge.');
+    renderStatus('Tap "Use my location", pick a county, or search for a gauge.');
   }
 }

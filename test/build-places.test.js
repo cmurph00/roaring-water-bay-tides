@@ -5,6 +5,7 @@ import {
   COASTAL_FEATURE_KIND,
   parseGeonamesLine,
   kindForRow,
+  countyForRow,
   altNamesForRow,
   rowToPlace,
   isNearAnySource,
@@ -47,6 +48,19 @@ test("rowToPlace carries population as `pop` when present, and omits it when zer
   const base = { name: "Schull", asciiname: "Schull", alternatenames: "", latitude: 51.52, longitude: -9.55, featureClass: "P", featureCode: "PPL" };
   assert.equal(rowToPlace({ ...base, population: 700 }).pop, 700);
   assert.equal("pop" in rowToPlace({ ...base, population: 0 }), false);
+});
+
+test("countyForRow maps admin1.admin2 to an Irish county, else null", () => {
+  assert.equal(countyForRow({ admin1: "M", admin2: "04" }), "Cork");
+  assert.equal(countyForRow({ admin1: "M", admin2: "11" }), "Kerry");
+  assert.equal(countyForRow({ admin1: "U", admin2: "06" }), "Donegal");
+  assert.equal(countyForRow({ admin1: "L", admin2: "35" }), "Dublin"); // Fingal collapses to Dublin
+  assert.equal(countyForRow({ admin1: "X", admin2: "99" }), null); // unmapped/non-IE
+});
+
+test("rowToPlace carries `county` when the admin codes map to one", () => {
+  const row = { name: "Schull", asciiname: "Schull", alternatenames: "", latitude: 51.52, longitude: -9.55, featureClass: "P", featureCode: "PPL", admin1: "M", admin2: "04" };
+  assert.equal(rowToPlace(row).county, "Cork");
 });
 
 test("kindForRow maps curated H/T/L feature codes to their kind", () => {

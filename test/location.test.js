@@ -6,6 +6,9 @@ import {
   searchStations,
   distinctCountries,
   filterByCountry,
+  assignCounties,
+  distinctCounties,
+  filterByCounty,
   searchBeaches,
   searchPlaces,
 } from "../src/location.js";
@@ -53,6 +56,45 @@ test("filterByCountry returns [] for a falsy country (All countries)", () => {
   assert.deepEqual(filterByCountry(stations, ""), []);
   assert.deepEqual(filterByCountry(stations, null), []);
   assert.deepEqual(filterByCountry(stations, undefined), []);
+});
+
+const countyPlaces = [
+  { name: "Cork", latitude: 51.9, longitude: -8.47, county: "Cork" },
+  { name: "Tralee", latitude: 52.27, longitude: -9.7, county: "Kerry" },
+  { name: "NoCounty", latitude: 51.5, longitude: -9.0 }, // a place without a county is ignored
+];
+
+test("assignCounties tags an in-box station with its nearest county-place's county", () => {
+  const s = [
+    { id: "cork", latitude: 51.85, longitude: -8.5 }, // ~ Cork harbour
+    { id: "kerry", latitude: 52.26, longitude: -9.71 }, // ~ Tralee bay
+  ];
+  assignCounties(s, countyPlaces);
+  assert.equal(s[0].county, "Cork");
+  assert.equal(s[1].county, "Kerry");
+});
+
+test("assignCounties leaves a non-Irish (out-of-box) station without a county", () => {
+  const s = [{ id: "aberdeen", latitude: 57.144, longitude: -2.08 }];
+  assignCounties(s, countyPlaces);
+  assert.equal("county" in s[0], false);
+});
+
+test("assignCounties leaves an in-box station with no county-place within range county-less", () => {
+  const s = [{ id: "midlands", latitude: 53.4, longitude: -7.9 }]; // >25km from Cork/Tralee
+  assignCounties(s, countyPlaces);
+  assert.equal("county" in s[0], false);
+});
+
+test("distinctCounties returns unique, sorted, truthy counties", () => {
+  const input = [{ county: "Cork" }, { county: "Kerry" }, { county: "Cork" }, {}, { county: "" }];
+  assert.deepEqual(distinctCounties(input), ["Cork", "Kerry"]);
+});
+
+test("filterByCounty returns only stations in the county, [] for a falsy county", () => {
+  const s = [{ id: "a", county: "Cork" }, { id: "b", county: "Kerry" }];
+  assert.deepEqual(filterByCounty(s, "Cork").map((x) => x.id), ["a"]);
+  assert.deepEqual(filterByCounty(s, ""), []);
 });
 
 const beaches = [

@@ -96,8 +96,30 @@ export function parseGeonamesLine(line) {
     featureClass: c[6],
     featureCode: c[7],
     countryCode: c[8],
+    admin1: c[10] ?? "",
+    admin2: c[11] ?? "",
     population: Number(c[14]) || 0,
   };
+}
+
+// GeoNames Ireland county lookup, keyed `${admin1_code}.${admin2_code}` (province.county — see
+// data/IE.txt). Derived by enumerating every admin1.admin2 pair present in the IE dump against its
+// largest town (e.g. M.04 -> Cork town -> "Cork"). The four Dublin local authorities (L.33 city,
+// L.34 Dún Laoghaire–Rathdown, L.35 Fingal, L.39 South Dublin) all collapse to "Dublin". Two tiny
+// pop-0 artefact codes (C.36, M.32) are deliberately unmapped. RoI only — the IE dump has no NI.
+export const COUNTY_BY_CODE = {
+  "C.10": "Galway", "C.14": "Leitrim", "C.20": "Mayo", "C.24": "Roscommon", "C.25": "Sligo",
+  "L.01": "Carlow", "L.12": "Kildare", "L.13": "Kilkenny", "L.15": "Laois", "L.18": "Longford",
+  "L.19": "Louth", "L.21": "Meath", "L.23": "Offaly", "L.29": "Westmeath", "L.30": "Wexford",
+  "L.31": "Wicklow", "L.33": "Dublin", "L.34": "Dublin", "L.35": "Dublin", "L.39": "Dublin",
+  "M.03": "Clare", "M.04": "Cork", "M.11": "Kerry", "M.26": "Tipperary", "M.27": "Waterford",
+  "M.42": "Limerick", "M.44": "Waterford", "U.02": "Cavan", "U.06": "Donegal", "U.22": "Monaghan",
+};
+
+// Resolves a parsed GeoNames row to its Irish county name, or null when the admin1.admin2 pair
+// isn't a mapped county (non-IE rows, or the two pop-0 artefact codes). Pure, unit-testable.
+export function countyForRow(row) {
+  return COUNTY_BY_CODE[`${row.admin1}.${row.admin2}`] ?? null;
 }
 
 // Populated-place feature codes that are a real town/village worth labelling on the map. Other
@@ -160,6 +182,8 @@ export function rowToPlace(row) {
 
   const place = { name: row.name, latitude: row.latitude, longitude: row.longitude, kind };
   if (row.population > 0) place.pop = row.population;
+  const county = countyForRow(row);
+  if (county) place.county = county;
   const alt = altNamesForRow(row);
   if (alt.length > 0) place.alt = alt;
   return place;

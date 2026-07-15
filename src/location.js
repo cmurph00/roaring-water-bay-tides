@@ -39,6 +39,46 @@ export function filterByCountry(stations, country) {
   return stations.filter((s) => s.country === country);
 }
 
+// Rough all-Ireland bounding box — a cheap pre-filter so assignCounties skips the ~800 non-Irish
+// European TICON gauges without running the nearest-place loop over each of them.
+const IE_BBOX = { minLat: 51, maxLat: 56, minLon: -11, maxLon: -5 };
+const COUNTY_MAX_KM = 25; // a coastal station is always well within this of a coastal place; a mis-boxed non-Irish one won't be
+
+// Assigns each Irish station its county by inheriting it from the nearest gazetteer place that
+// carries one (data/places.json — county derived from GeoNames admin codes in build-places.mjs).
+// Stations have only lat/lon, no admin data of their own, so this coastal nearest-place lookup is
+// how the county filter gets its values. Mutates each in-box station (adds `county`) and returns
+// the same array; out-of-box (non-Irish) stations and any with no county-place within
+// COUNTY_MAX_KM are left without a `county`, so they never appear in the county dropdown.
+export function assignCounties(stations, places) {
+  const withCounty = places.filter((p) => p.county);
+  if (withCounty.length === 0) return stations;
+  for (const s of stations) {
+    if (s.latitude < IE_BBOX.minLat || s.latitude > IE_BBOX.maxLat || s.longitude < IE_BBOX.minLon || s.longitude > IE_BBOX.maxLon) continue;
+    let best = null;
+    let bestD = Infinity;
+    for (const p of withCounty) {
+      const d = haversineKm({ lat: s.latitude, lon: s.longitude }, { lat: p.latitude, lon: p.longitude });
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+    if (best && bestD <= COUNTY_MAX_KM) s.county = best.county;
+  }
+  return stations;
+}
+
+export function distinctCounties(stations) {
+  const counties = new Set(stations.map((s) => s.county).filter(Boolean));
+  return [...counties].sort();
+}
+
+export function filterByCounty(stations, county) {
+  if (!county) return [];
+  return stations.filter((s) => s.county === county);
+}
+
 // Named localities (e.g. EPA-registered beaches) that resolve to their nearest real
 // tide-prediction station at click-time — see mergeStationIndexes/nearestStation in
 // src/ui.js. Search-only substring match, same shape as searchStations but scoped to
