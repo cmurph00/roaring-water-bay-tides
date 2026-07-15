@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  // Pre-paint theme application — runs before <style> is parsed and before
+  // first paint, so a returning visitor with an explicit light/dark choice
+  // never sees a flash of the wrong theme. "auto" (or no stored value) is
+  // intentionally left alone here: the CSS @media (prefers-color-scheme)
+  // rules already handle that case correctly with zero JS. Mirrors
+  // src/theme.js's applyTheme(); kept inline (not imported) so it can run
+  // synchronously ahead of any module fetch/parse.
+  (function () {
+    try {
+      var t = localStorage.getItem("rwb.theme");
+      if (t === "light" || t === "dark") {
+        document.documentElement.setAttribute("data-theme", t);
+        document.documentElement.style.colorScheme = t;
+      }
+    } catch (e) {}
+  })();
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Roaring Water Bay Tides</title>
@@ -8,79 +26,200 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Space+Mono:wght@400;700&display=swap');
 
+  /* ---------------------------------------------------------------------
+   * Theme tokens
+   * -------------------------------------------------------------------
+   * "Slack Tide" palette: a deep sea-teal / brass-and-parchment night mode,
+   * and a warm chart-paper / deep-navy-ink day mode. Every colour used
+   * anywhere below is one of these custom properties — nothing else in the
+   * stylesheet hardcodes a colour — so the whole page repaints on a theme
+   * change with no further rules needed.
+   *
+   * Light is the base (:root) so browsers with no prefers-color-scheme
+   * support get a sane default. Dark is applied either by the OS/browser
+   * preference (@media) or by an explicit data-theme="dark"/"light", the
+   * latter always overriding the former via the higher specificity of an
+   * attribute selector — this is what lets the manual toggle win over the
+   * media query in both directions.
+   * ------------------------------------------------------------------- */
   :root {
-    --ink: #e9e2cf;
-    --paper: #f4ecda;
-    --paper-dim: #e8dfc8;
-    --navy: #0c2436;
-    --navy-deep: #081724;
-    --brass: #b8863f;
-    --brass-bright: #d6a75a;
-    --rise: #c9713f;
-    --fall: #3f7d8c;
-    --hair: rgba(233, 226, 207, 0.16);
+    color-scheme: light dark;
+
+    /* Light ("chart paper") */
+    --color-bg: #f6efe1;
+    --color-bg-grad-1: #eef2ee;
+    --color-bg-grad-2: #e9f1f0;
+    --color-panel-flat: rgba(13, 34, 51, 0.035);
+    --color-panel-a: rgba(13, 34, 51, 0.045);
+    --color-panel-b: rgba(13, 34, 51, 0.015);
+    --color-border: rgba(13, 34, 51, 0.14);
+    --color-field-border: #9c8358;
+    --color-heading: #0d2233;
+    --color-body: #33424c;
+    --color-label: #56646c;
+    --color-faint: #5c6b66;
+    --color-eyebrow: #8a5a1f;
+    --color-accent: #b8863f;
+    --color-accent-hover: #c89a52;
+    --color-accent-contrast: #0d2233;
+    --color-rise: #a8471f;
+    --color-fall: #1f6b78;
+    --color-input-bg: #fffdf7;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Dark ("slack tide") */
+      --color-bg: #0a1c29;
+      --color-bg-grad-1: #123249;
+      --color-bg-grad-2: #0f2c40;
+      --color-panel-flat: rgba(245, 239, 226, 0.04);
+      --color-panel-a: rgba(245, 239, 226, 0.05);
+      --color-panel-b: rgba(245, 239, 226, 0.02);
+      --color-border: rgba(245, 239, 226, 0.14);
+      --color-field-border: #4a7089;
+      --color-heading: #f5efe2;
+      --color-body: #c9d0c6;
+      --color-label: #a9b3ac;
+      --color-faint: #7c8f8a;
+      --color-eyebrow: #e0ab5e;
+      --color-accent: #c8934f;
+      --color-accent-hover: #dba968;
+      --color-accent-contrast: #081724;
+      --color-rise: #e2825a;
+      --color-fall: #5fa9b8;
+      --color-input-bg: #0d2333;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --color-bg: #f6efe1;
+    --color-bg-grad-1: #eef2ee;
+    --color-bg-grad-2: #e9f1f0;
+    --color-panel-flat: rgba(13, 34, 51, 0.035);
+    --color-panel-a: rgba(13, 34, 51, 0.045);
+    --color-panel-b: rgba(13, 34, 51, 0.015);
+    --color-border: rgba(13, 34, 51, 0.14);
+    --color-field-border: #9c8358;
+    --color-heading: #0d2233;
+    --color-body: #33424c;
+    --color-label: #56646c;
+    --color-faint: #5c6b66;
+    --color-eyebrow: #8a5a1f;
+    --color-accent: #b8863f;
+    --color-accent-hover: #c89a52;
+    --color-accent-contrast: #0d2233;
+    --color-rise: #a8471f;
+    --color-fall: #1f6b78;
+    --color-input-bg: #fffdf7;
+  }
+
+  :root[data-theme="dark"] {
+    --color-bg: #0a1c29;
+    --color-bg-grad-1: #123249;
+    --color-bg-grad-2: #0f2c40;
+    --color-panel-flat: rgba(245, 239, 226, 0.04);
+    --color-panel-a: rgba(245, 239, 226, 0.05);
+    --color-panel-b: rgba(245, 239, 226, 0.02);
+    --color-border: rgba(245, 239, 226, 0.14);
+    --color-field-border: #4a7089;
+    --color-heading: #f5efe2;
+    --color-body: #c9d0c6;
+    --color-label: #a9b3ac;
+    --color-faint: #7c8f8a;
+    --color-eyebrow: #e0ab5e;
+    --color-accent: #c8934f;
+    --color-accent-hover: #dba968;
+    --color-accent-contrast: #081724;
+    --color-rise: #e2825a;
+    --color-fall: #5fa9b8;
+    --color-input-bg: #0d2333;
   }
 
   * { box-sizing: border-box; }
+
+  html { color-scheme: light dark; }
 
   body {
     margin: 0;
     min-height: 100vh;
     background:
-      radial-gradient(ellipse at 20% -10%, #123249 0%, transparent 55%),
-      radial-gradient(ellipse at 100% 110%, #0f2c40 0%, transparent 50%),
-      var(--navy);
-    color: var(--ink);
+      radial-gradient(ellipse at 20% -10%, var(--color-bg-grad-1) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, var(--color-bg-grad-2) 0%, transparent 50%),
+      var(--color-bg);
+    color: var(--color-body);
     font-family: 'Space Mono', monospace;
     padding: 0 0 4rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .wrap { max-width: 640px; margin: 0 auto; padding: 2.2rem 1.4rem 0; }
 
-  header { position: relative; padding-bottom: 1.6rem; margin-bottom: 1.8rem; border-bottom: 1px solid var(--hair); }
+  header { position: relative; padding-bottom: 1.6rem; margin-bottom: 1.8rem; border-bottom: 1px solid var(--color-border); }
+
+  .header-tools {
+    position: absolute; top: 0.1rem; right: 0; display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .theme-toggle {
+    display: flex; align-items: center; gap: 0.35rem;
+    background: transparent; color: var(--color-label);
+    border: 1px solid var(--color-field-border); border-radius: 999px;
+    padding: 0.32rem 0.65rem 0.32rem 0.55rem;
+    font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .theme-toggle:hover { color: var(--color-eyebrow); border-color: var(--color-eyebrow); background: var(--color-panel-flat); }
+  .theme-toggle-icon { font-size: 0.9rem; line-height: 1; }
 
   .eyebrow {
     font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--brass-bright); margin: 0 0 0.5rem;
+    color: var(--color-eyebrow); margin: 0 0 0.5rem;
   }
 
   h1 {
     font-family: 'Fraunces', serif; font-weight: 600; font-optical-sizing: auto;
     font-size: clamp(2.1rem, 7vw, 2.8rem); margin: 0 0 0.35rem; letter-spacing: -0.01em;
-    color: var(--paper);
+    color: var(--color-heading);
   }
 
-  .sub { margin: 0; color: rgba(233,226,207,0.62); font-size: 0.85rem; line-height: 1.5; max-width: 46ch; }
+  .sub { margin: 0; color: var(--color-label); font-size: 0.85rem; line-height: 1.5; max-width: 46ch; }
 
   .compass {
-    position: absolute; top: 0.2rem; right: 0; width: 54px; height: 54px; opacity: 0.85;
+    width: 50px; height: 50px; opacity: 0.9; flex: none;
   }
+  .compass .ring { stroke: var(--color-field-border); }
+  .compass .arm-v, .compass .arm-h { fill: var(--color-accent); }
+  .compass .center { fill: var(--color-eyebrow); }
 
   .controls {
     display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-end;
-    background: rgba(244,236,218,0.04); border: 1px solid var(--hair); border-radius: 10px;
+    background: var(--color-panel-flat); border: 1px solid var(--color-border); border-radius: 10px;
     padding: 1rem; margin-bottom: 1.8rem;
   }
 
   .field { display: flex; flex-direction: column; gap: 0.35rem; }
-  .field label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(233,226,207,0.55); }
+  .field label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-label); }
 
   input[type="date"], input[type="text"], select {
-    background: var(--navy-deep); color: var(--ink); border: 1px solid var(--hair);
+    background: var(--color-input-bg); color: var(--color-body); border: 1px solid var(--color-field-border);
     border-radius: 6px; padding: 0.55rem 0.6rem; font-family: 'Space Mono', monospace; font-size: 0.9rem;
-    color-scheme: dark;
   }
 
   input[type="text"] { min-width: 14rem; width: 100%; }
-  input[type="text"]::placeholder { color: rgba(233,226,207,0.35); }
+  input[type="text"]::placeholder { color: var(--color-faint); }
   select { min-width: 9rem; }
 
+  button:focus-visible, select:focus-visible, input:focus-visible, .theme-toggle:focus-visible, .search-results li:focus-visible {
+    outline: 2px solid var(--color-eyebrow); outline-offset: 2px;
+  }
+
   button {
-    background: var(--brass); color: var(--navy-deep); border: none; border-radius: 6px;
+    background: var(--color-accent); color: var(--color-accent-contrast); border: none; border-radius: 6px;
     padding: 0.6rem 1.1rem; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.85rem;
     letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s ease, transform 0.1s ease;
   }
-  button:hover { background: var(--brass-bright); }
+  button:hover { background: var(--color-accent-hover); }
   button:active { transform: translateY(1px); }
   button:disabled { opacity: 0.5; cursor: default; }
 
@@ -88,68 +227,75 @@
 
   .search-results {
     list-style: none; margin: 0; padding: 0; position: absolute; top: calc(100% + 0.3rem); left: 0; right: 0;
-    background: var(--navy-deep); border: 1px solid var(--hair); border-radius: 8px;
+    background: var(--color-input-bg); border: 1px solid var(--color-field-border); border-radius: 8px;
     max-height: 14rem; overflow-y: auto; z-index: 10;
   }
   .search-results:empty { display: none; }
   .search-results li {
-    padding: 0.55rem 0.75rem; font-size: 0.85rem; cursor: pointer; border-top: 1px solid var(--hair);
+    padding: 0.55rem 0.75rem; font-size: 0.85rem; cursor: pointer; border-top: 1px solid var(--color-border);
+    color: var(--color-body);
   }
   .search-results li:first-child { border-top: none; }
-  .search-results li:hover { background: rgba(233,226,207,0.06); color: var(--brass-bright); }
+  .search-results li:hover { background: var(--color-panel-flat); color: var(--color-eyebrow); }
 
   .station-header {
-    margin: 0 0 1.2rem; font-size: 0.85rem; color: rgba(233,226,207,0.62); line-height: 1.5;
+    margin: 0 0 1.2rem; font-size: 0.85rem; color: var(--color-label); line-height: 1.5;
   }
 
   .day {
-    margin-bottom: 1.3rem; border: 1px solid var(--hair); border-radius: 10px; overflow: hidden;
-    background: linear-gradient(180deg, rgba(244,236,218,0.05), rgba(244,236,218,0.02));
+    margin-bottom: 1.3rem; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden;
+    background: linear-gradient(180deg, var(--color-panel-a), var(--color-panel-b));
   }
 
   .day-head {
-    padding: 0.75rem 1rem; font-family: 'Fraunces', serif; font-size: 1.05rem; color: var(--paper);
-    border-bottom: 1px solid var(--hair); display: flex; justify-content: space-between; align-items: baseline;
+    padding: 0.75rem 1rem; font-family: 'Fraunces', serif; font-size: 1.05rem; color: var(--color-heading);
+    border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: baseline;
   }
-  .day-head .range { font-family: 'Space Mono', monospace; font-size: 0.68rem; color: rgba(233,226,207,0.5); }
+  .day-head .range { font-family: 'Space Mono', monospace; font-size: 0.68rem; color: var(--color-label); }
 
   table { width: 100%; border-collapse: collapse; }
-  td { padding: 0.6rem 1rem; font-size: 0.92rem; border-top: 1px solid var(--hair); }
+  td { padding: 0.6rem 1rem; font-size: 0.92rem; border-top: 1px solid var(--color-border); color: var(--color-body); }
   tr:first-child td { border-top: none; }
 
   .kind { display: flex; align-items: center; gap: 0.45rem; width: 5.2rem; }
   .kind .arrow { font-size: 0.85rem; }
-  .kind.high .arrow { color: var(--rise); }
-  .kind.low .arrow { color: var(--fall); }
-  .kind .label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(233,226,207,0.55); }
+  .kind.high .arrow { color: var(--color-rise); }
+  .kind.low .arrow { color: var(--color-fall); }
+  .kind .label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-label); }
 
-  .time { font-weight: 700; letter-spacing: 0.02em; }
-  .height { text-align: right; color: rgba(233,226,207,0.75); }
+  .time { font-weight: 700; letter-spacing: 0.02em; color: var(--color-heading); }
+  .height { text-align: right; color: var(--color-label); }
 
-  .empty, .loading { text-align: center; padding: 2rem 1rem; color: rgba(233,226,207,0.45); font-size: 0.85rem; }
+  .empty, .loading { text-align: center; padding: 2rem 1rem; color: var(--color-faint); font-size: 0.85rem; }
 
   footer {
-    margin-top: 2rem; padding-top: 1.4rem; border-top: 1px solid var(--hair);
-    font-size: 0.72rem; line-height: 1.6; color: rgba(233,226,207,0.4);
+    margin-top: 2rem; padding-top: 1.4rem; border-top: 1px solid var(--color-border);
+    font-size: 0.72rem; line-height: 1.6; color: var(--color-faint);
   }
-  footer strong { color: rgba(233,226,207,0.6); }
-  .credits { margin-top: 0.6rem; font-size: 0.68rem; color: rgba(233,226,207,0.3); }
+  footer strong { color: var(--color-label); }
+  .credits { margin-top: 0.6rem; font-size: 0.68rem; color: var(--color-faint); }
 
-  .err { color: var(--rise); font-size: 0.8rem; margin-top: 0.6rem; }
+  .err { color: var(--color-rise); font-size: 0.8rem; margin-top: 0.6rem; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <header>
+      <div class="header-tools">
+        <button id="theme-toggle" class="theme-toggle" type="button">
+          <span class="theme-toggle-icon" aria-hidden="true">◐</span>
+          <span class="theme-toggle-label">Auto</span>
+        </button>
+        <svg class="compass" viewBox="0 0 100 100" fill="none">
+          <circle class="ring" cx="50" cy="50" r="46" stroke-width="1" opacity="0.5"/>
+          <path class="arm-v" d="M50 8 L56 46 L50 92 L44 46 Z" opacity="0.75"/>
+          <path class="arm-h" d="M8 50 L46 44 L92 50 L46 56 Z" opacity="0.4"/>
+          <circle class="center" cx="50" cy="50" r="3.5"/>
+        </svg>
+      </div>
       <p class="eyebrow">Global Tide Predictor</p>
       <h1>Roaring Water Bay Tides</h1>
       <p class="sub">Harmonic predictions from the nearest of 800+ European gauge stations, computed directly &mdash; no proxy station, no hand-tuned offset. Not for navigation.</p>
-      <svg class="compass" viewBox="0 0 100 100" fill="none">
-        <circle cx="50" cy="50" r="46" stroke="#b8863f" stroke-width="1" opacity="0.5"/>
-        <path d="M50 8 L56 46 L50 92 L44 46 Z" fill="#b8863f" opacity="0.7"/>
-        <path d="M8 50 L46 44 L92 50 L46 56 Z" fill="#b8863f" opacity="0.35"/>
-        <circle cx="50" cy="50" r="3.5" fill="#d6a75a"/>
-      </svg>
     </header>
 
     <div class="controls">

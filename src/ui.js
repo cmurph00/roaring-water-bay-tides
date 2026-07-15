@@ -10,6 +10,7 @@ import {
 import { getTides } from "./resolver.js";
 import { applyCorrection } from "./correction.js";
 import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from "./format.js";
+import { initThemeToggle } from "./theme.js";
 
 const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
@@ -339,6 +340,7 @@ async function useMyLocation() {
 }
 
 export async function init() {
+  initThemeToggle();
   await loadIndex();
   wireSearch();
   wireCountryFilter();
