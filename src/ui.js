@@ -60,6 +60,26 @@ function renderError(message) {
   container.innerHTML = `<div class="err">${message}</div>`;
 }
 
+function renderStatus(message, className = "empty") {
+  const container = document.getElementById("results");
+  container.innerHTML = `<div class="${className}">${message}</div>`;
+}
+
+// Maps a GeolocationPositionError (or any other rejection) to a visible,
+// actionable message — never fail silently.
+function geolocationErrorMessage(err) {
+  switch (err?.code) {
+    case 1: // PERMISSION_DENIED
+      return 'Location permission is off. Enable it for your browser in Settings, or search for a gauge / pick a country.';
+    case 2: // POSITION_UNAVAILABLE
+      return "Couldn't determine your location. Try again, or search for a gauge.";
+    case 3: // TIMEOUT
+      return "Location timed out. Try again, or search for a gauge.";
+    default:
+      return "Couldn't get your location — search for a gauge or pick a country.";
+  }
+}
+
 function renderHeader(entry, distanceKm, station) {
   const el = document.getElementById("station-header");
   const dist = distanceKm != null ? ` · nearest gauge ${fmtDistance(distanceKm)} away` : "";
@@ -195,16 +215,24 @@ function wireDayCount() {
 }
 
 async function useMyLocation() {
+  renderStatus("Locating your nearest gauge…", "loading");
   try {
     const { lat, lon } = await detectLocation();
-    const { station, distanceKm } = nearestStation(lat, lon, index);
+    const result = nearestStation(lat, lon, index);
+    if (!result) {
+      renderError("Couldn't get your location — search for a gauge or pick a country.");
+      return;
+    }
+    const { station, distanceKm } = result;
     // Reflect the detected station's country in the dropdown before
     // rendering; searchScope() reads the select value, so this also scopes
     // subsequent searches to the user's country.
     setCountryFilter(station.country);
     await showStation(station, distanceKm);
-  } catch {
-    // Denied/unavailable → leave last-used/default in place
+  } catch (err) {
+    // Denied/unavailable/timeout → always leave a visible, actionable
+    // message instead of failing silently (was the iOS "does nothing" bug).
+    renderError(geolocationErrorMessage(err));
   }
 }
 
@@ -225,6 +253,11 @@ export async function init() {
       renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
     }
   } else {
-    useMyLocation(); // first run: try geolocation
+    // Do NOT auto-geolocate on load: iOS Safari blocks getCurrentPosition
+    // outside a user gesture, and a resulting denial can leave iOS unable to
+    // re-prompt on the later button tap too. Wait for an explicit tap on
+    // "Use my location" instead.
+    document.getElementById("station-header").textContent = "";
+    renderStatus('Tap "Use my location", pick a country, or search for a gauge.');
   }
 }
