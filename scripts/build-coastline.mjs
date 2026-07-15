@@ -180,6 +180,46 @@ export function selectIslandPolygons(geojson, filterBbox = IRELAND_FILTER_BBOX) 
   return rings;
 }
 
+/**
+ * Extracts labellable named islands from the OSi islands FeatureCollection: for each feature with a
+ * real NAMN1 (dropping blanks and "UNK"), returns { name, lat, lon, area } where lat/lon is the
+ * island's bbox centre (a stable label anchor) and area is a relative shoelace area (deg², used only
+ * to tier which islands label at which zoom). One entry per feature (largest sub-polygon for a
+ * MultiPolygon). Pure, unit-tested.
+ */
+// Relative-area (deg²) -> label tier for islands, mirroring the town population tiers so the map
+// reveals big islands (Achill, Aran, Valentia, Clear) at low zoom and small ones (Hare, Long) only
+// when zoomed in. Thresholds picked from the OSi named-island area distribution.
+export function islandTier(area) {
+  if (area >= 3e-3) return "t1";
+  if (area >= 5e-4) return "t2";
+  return "t3";
+}
+
+export function extractNamedIslands(geojson, filterBbox = IRELAND_FILTER_BBOX) {
+  const out = [];
+  for (const feature of geojson.features ?? []) {
+    const name = (feature.properties?.NAMN1 ?? "").trim();
+    if (!name || name.toUpperCase() === "UNK") continue;
+    const geom = feature.geometry;
+    const polygons = geom?.type === "Polygon" ? [geom.coordinates] : geom?.type === "MultiPolygon" ? geom.coordinates : [];
+    let best = null;
+    for (const polygon of polygons) {
+      const outer = polygon?.[0];
+      if (!Array.isArray(outer) || outer.length < 3) continue;
+      const ring = ringToLatLon(outer);
+      const bbox = computeBbox(ring);
+      if (!bboxContained(bbox, filterBbox)) continue;
+      let a = 0;
+      for (let i = 0; i < ring.length - 1; i++) a += ring[i][1] * ring[i + 1][0] - ring[i + 1][1] * ring[i][0];
+      const area = Math.abs(a / 2);
+      if (!best || area > best.area) best = { name, lat: (bbox.minLat + bbox.maxLat) / 2, lon: (bbox.minLon + bbox.maxLon) / 2, area };
+    }
+    if (best) out.push(best);
+  }
+  return out;
+}
+
 async function downloadJson(url, path, label) {
   await mkdir("data", { recursive: true });
   console.log(`Downloading Natural Earth ${label}...`);
@@ -215,10 +255,14 @@ async function build() {
   // islands). If the raw file isn't present, fall back to Natural Earth's own major island rings
   // so the build still succeeds (just without the small islands).
   let islandRings;
+  let namedIslands = [];
   try {
     const osi = JSON.parse(await readFile(OSI_ISLANDS_PATH, "utf8"));
     islandRings = selectIslandPolygons(osi);
-    console.log(`Islands: OSi/Tailte Éireann dataset (${islandRings.length} island polygons).`);
+    namedIslands = extractNamedIslands(osi)
+      .map((i) => ({ name: i.name, lat: +i.lat.toFixed(4), lon: +i.lon.toFixed(4), tier: islandTier(i.area) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    console.log(`Islands: OSi/Tailte Éireann dataset (${islandRings.length} polygons, ${namedIslands.length} named/labelled).`);
   } catch {
     islandRings = neRings.slice(1);
     console.warn(
@@ -243,7 +287,7 @@ async function build() {
     maxLon: rawBbox.maxLon + BBOX_PAD_DEG,
   };
 
-  const outline = { bbox, polylines };
+  const outline = { bbox, polylines, islands: namedIslands };
   const json = JSON.stringify(outline);
   await writeFile(OUT_PATH, json);
   const kb = (Buffer.byteLength(json) / 1024).toFixed(1);

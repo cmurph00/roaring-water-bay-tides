@@ -65,6 +65,10 @@
     --color-rise: #a8471f;
     --color-fall: #1f6b78;
     --color-input-bg: #fffdf7;
+    /* Offline SVG map (light): cool sea, warm-white land, thin muted coastline (OSi-crisp look). */
+    --map-sea: #dbe6ec;
+    --map-land: #fcf9f2;
+    --map-coast: #8a9aa6;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -89,6 +93,10 @@
       --color-rise: #e2825a;
       --color-fall: #5fa9b8;
       --color-input-bg: #0d2333;
+      /* Offline SVG map (dark): deep sea, lighter land, blue coastline. */
+      --map-sea: #0b1f2e;
+      --map-land: #1b3d54;
+      --map-coast: #4a7089;
     }
   }
 
@@ -112,6 +120,9 @@
     --color-rise: #a8471f;
     --color-fall: #1f6b78;
     --color-input-bg: #fffdf7;
+    --map-sea: #dbe6ec;
+    --map-land: #fcf9f2;
+    --map-coast: #8a9aa6;
   }
 
   :root[data-theme="dark"] {
@@ -134,6 +145,9 @@
     --color-rise: #e2825a;
     --color-fall: #5fa9b8;
     --color-input-bg: #0d2333;
+    --map-sea: #0b1f2e;
+    --map-land: #1b3d54;
+    --map-coast: #4a7089;
   }
 
   * { box-sizing: border-box; }
@@ -268,10 +282,12 @@
     padding: 1rem; margin-bottom: 1.8rem;
   }
   .map-svg-container { display: flex; justify-content: center; position: relative; }
-  .map-svg { width: 100%; max-width: 340px; height: auto; display: block; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
+  .map-svg { width: 100%; max-width: 340px; height: auto; display: block; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; background: var(--map-sea); border-radius: 6px; }
   .map-svg:active { cursor: grabbing; }
-  .map-sea { fill: var(--color-input-bg); }
-  .map-land { fill: var(--color-panel-a); stroke: var(--color-field-border); stroke-width: 1; stroke-linejoin: round; }
+  .map-sea { fill: var(--map-sea); }
+  /* non-scaling-stroke keeps the coastline a constant ~0.9px on screen at ANY zoom — without it the
+     stroke is in user units and balloons at deep zoom, inflating islands into fat merged blobs. */
+  .map-land { fill: var(--map-land); stroke: var(--map-coast); stroke-width: 0.9px; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
   .map-marker { cursor: pointer; }
   .map-marker-hit { fill: transparent; }
   .map-marker-shape { stroke: var(--color-bg); stroke-width: 0.6; }
@@ -303,6 +319,15 @@
   .map-town-t1 .map-town-label { font-size: calc(8px * var(--map-marker-scale, 1)); font-weight: 600; fill: var(--color-label); }
   .map-town-t2 .map-town-label { font-size: calc(7px * var(--map-marker-scale, 1)); fill: var(--color-label); }
   .map-town-dot { fill: var(--color-faint); opacity: 0.55; }
+  /* OSi named-island labels — italic + water-toned to read as islands, area-tiered via the same
+     .tier-N zoom gates; halo in the land colour so the text sits legibly on the island shape. */
+  .map-island { display: none; pointer-events: none; }
+  .map-svg.tier-1 .map-island-t1, .map-svg.tier-2 .map-island-t2, .map-svg.tier-3 .map-island-t3 { display: block; }
+  .map-island-label {
+    text-anchor: middle; font-style: italic; fill: var(--color-fall);
+    font-size: calc(6px * var(--map-marker-scale, 1));
+    paint-order: stroke; stroke: var(--map-land); stroke-width: 2px; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+  }
   .map-zoom-controls { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; }
   .map-zoom-btn {
     width: 32px; height: 32px; padding: 0; border: 1px solid var(--color-border); border-radius: 7px;

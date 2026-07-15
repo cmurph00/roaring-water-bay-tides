@@ -162,6 +162,19 @@ export function buildMapSvg({ outline, gauges = [], beachModel = [], places = []
     svg.appendChild(g);
   }
 
+  // OSi named-island labels (from data/ireland-outline.json `islands`, CC-BY Tailte Éireann). The
+  // island shape itself is the marker, so these are just names — italic, tiered by island area
+  // (islandTier in build-coastline.mjs) and revealed with the same .tier-N zoom gates as towns.
+  for (const isle of outline?.islands ?? []) {
+    if (isle?.lat == null || isle.lon == null) continue;
+    const { x, y } = project(isle.lat, isle.lon, viewBox);
+    const g = svgEl("g", { class: `map-island map-island-${isle.tier || "t3"}` });
+    const text = svgEl("text", { x: fmt(x), y: fmt(y), class: "map-island-label" });
+    text.textContent = isle.name;
+    g.appendChild(text);
+    svg.appendChild(g);
+  }
+
   if (userLocation) {
     const { x, y } = project(userLocation.lat, userLocation.lon, viewBox);
     const you = svgEl("g", { class: "map-you", "aria-label": "Your location" });

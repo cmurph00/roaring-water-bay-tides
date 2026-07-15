@@ -9,6 +9,8 @@ import {
   ringToLatLon,
   selectIrelandRings,
   selectIslandPolygons,
+  extractNamedIslands,
+  islandTier,
 } from "../scripts/build-coastline.mjs";
 
 // --- bboxContained -----------------------------------------------------------------
@@ -172,6 +174,29 @@ test("selectIslandPolygons handles MultiPolygon and drops out-of-box islands", (
   };
   const rings = selectIslandPolygons(geojson);
   assert.equal(rings.length, 1);
+});
+
+// --- extractNamedIslands / islandTier ----------------------------------------------------
+
+test("islandTier tiers by area (big -> t1, small -> t3)", () => {
+  assert.equal(islandTier(1e-2), "t1");
+  assert.equal(islandTier(8e-4), "t2");
+  assert.equal(islandTier(1e-4), "t3");
+});
+
+test("extractNamedIslands returns {name,lat,lon,area} for named islands, dropping UNK/blank", () => {
+  const geojson = {
+    features: [
+      { properties: { NAMN1: "Sherkin" }, geometry: { type: "Polygon", coordinates: [[[-9.42, 51.46], [-9.40, 51.48], [-9.44, 51.48], [-9.42, 51.46]]] } },
+      { properties: { NAMN1: "UNK" }, geometry: { type: "Polygon", coordinates: [[[-9.5, 51.45], [-9.48, 51.46], [-9.5, 51.45]]] } },
+      { properties: { NAMN1: "" }, geometry: { type: "Polygon", coordinates: [[[-9.5, 51.45], [-9.48, 51.46], [-9.5, 51.45]]] } },
+    ],
+  };
+  const named = extractNamedIslands(geojson);
+  assert.equal(named.length, 1);
+  assert.equal(named[0].name, "Sherkin");
+  assert.ok(named[0].lat > 51.4 && named[0].lat < 51.5 && named[0].lon > -9.5 && named[0].lon < -9.3);
+  assert.ok(named[0].area > 0);
 });
 
 test("selectIrelandRings ignores non-LineString features (e.g. Point/Polygon)", () => {
