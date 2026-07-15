@@ -49,8 +49,20 @@ export function searchBeaches(query, beaches) {
   return beaches.filter((b) => b.name.toLowerCase().includes(q));
 }
 
-// Browser-only. Isolated here so the Phase 2 Capacitor wrap swaps only this function.
+// Isolated here so the Phase 2 Capacitor wrap swaps only this function. On a native
+// Capacitor shell (globalThis.Capacitor.isNativePlatform() true, with the Geolocation
+// plugin registered), use the native plugin via the Capacitor GLOBAL — never a bare
+// `import "@capacitor/..."`, since this file is loaded unbundled by the browser too and
+// a static import would break the plain GitHub Pages web app. On the web,
+// globalThis.Capacitor is undefined, so this falls through to the original
+// navigator.geolocation path, unchanged.
 export function detectLocation() {
+  if (globalThis.Capacitor?.isNativePlatform?.() && globalThis.Capacitor.Plugins?.Geolocation) {
+    return globalThis.Capacitor.Plugins.Geolocation.getCurrentPosition({ timeout: 10000 }).then(
+      (pos) => ({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+    );
+  }
+
   return new Promise((resolve, reject) => {
     if (!("geolocation" in navigator)) {
       reject(new Error("Geolocation unavailable"));

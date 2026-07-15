@@ -5,9 +5,16 @@
   "private": true,
   "scripts": {
     "test": "node --test",
-    "build:data": "node scripts/build-data.mjs"
+    "build:data": "node scripts/build-data.mjs",
+    "build:www": "node scripts/build-www.mjs"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.2",
     "@neaps/tide-database": "^0.8.20260701"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/geolocation": "^8.2.0"
   }
 }

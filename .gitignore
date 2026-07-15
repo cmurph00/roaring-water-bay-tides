@@ -13,3 +13,16 @@ node_modules/
 # Raw Marine Institute / OPW source CSVs (regenerate via scripts/build-mi.mjs;
 # see that file's header for the erddap.marine.ie re-download instructions)
 data/*.csv
+
+# Capacitor web assembly output (regenerate via `npm run build:www`)
+www/
+
+# Android build outputs / local machine config / generated web-copy — the core
+# android/ Gradle project (gradlew, build.gradle, AndroidManifest.xml, etc.) IS
+# committed; only generated-per-build artifacts are excluded here.
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
+android/capacitor-cordova-android-plugins/
