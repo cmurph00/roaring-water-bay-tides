@@ -28,16 +28,22 @@ const MAX_ZOOM = 20; // deepest zoom-in (view spans ~1/20th of the country) — 
 const USER_ZOOM = 7; // initial zoom when "Use my location" set a position — a regional view around the user
 // Population-tiered place labels: each tier appears only past its zoom level (k = fullWidth/viewWidth),
 // so the country view shows only big towns and smaller places reveal as you zoom in. See townTier().
-const TIER_ZOOM = { t1: 3, t2: 5, t3: 8, t4: 12 };
+const TIER_ZOOM = { t1: 3, t2: 5, t3: 8 };
 const WHEEL_STEP = 1.0015; // per wheel-delta unit; >1 so scrolling up zooms in
 const DBLTAP_MS = 300;
 
-// GeoNames population -> label tier (t1 = biggest towns, t4 = tiny/unranked villages).
+// Only label places at or above this GeoNames population. GeoNames has no population for the
+// countless tiny townlands/crossroads (Farranacoush, Clomacow, ...), so labelling every pop-0 (or
+// sub-threshold) entry piled them into an unreadable mess at deep zoom. This floor keeps real
+// settlements (Baltimore 347, Schull 700, Skibbereen 2778, ...) and drops the noise. Tunable.
+const MIN_LABEL_POP = 150;
+
+// GeoNames population -> label tier (t1 = biggest towns .. t3 = smallest labelled village). Only
+// called for towns already past MIN_LABEL_POP, so it never needs a sub-threshold tier.
 function townTier(pop) {
   if (pop >= 3000) return "t1";
   if (pop >= 800) return "t2";
-  if (pop >= 150) return "t3";
-  return "t4";
+  return "t3";
 }
 
 function svgEl(name, attrs = {}) {
@@ -146,8 +152,9 @@ export function buildMapSvg({ outline, gauges = [], beachModel = [], places = []
   // (PPLL crossroads/townlands) are `kind:"locality"` from build-places.mjs and never labelled.
   for (const town of places) {
     if (town?.kind !== "town" || town.latitude == null || town.longitude == null) continue;
+    if (!(town.pop >= MIN_LABEL_POP)) continue; // drop pop-0 townlands / sub-threshold noise (see MIN_LABEL_POP)
     const { x, y } = project(town.latitude, town.longitude, viewBox);
-    const g = svgEl("g", { class: `map-town map-town-${townTier(town.pop || 0)}` });
+    const g = svgEl("g", { class: `map-town map-town-${townTier(town.pop)}` });
     g.appendChild(svgEl("circle", { cx: fmt(x), cy: fmt(y), r: 1.3, class: "map-town-dot" }));
     const text = svgEl("text", { x: fmt(x), y: fmt(y - 2.4), class: "map-town-label" });
     text.textContent = town.name;
@@ -211,7 +218,6 @@ function attachPanZoom(svg, { W, H, viewBox, userLocation }) {
     svg.classList.toggle("tier-1", k >= TIER_ZOOM.t1);
     svg.classList.toggle("tier-2", k >= TIER_ZOOM.t2);
     svg.classList.toggle("tier-3", k >= TIER_ZOOM.t3);
-    svg.classList.toggle("tier-4", k >= TIER_ZOOM.t4);
   }
 
   // client px -> SVG user coords, using the element's rendered size and the current view.

@@ -58,8 +58,11 @@ export const IRELAND_FILTER_BBOX = { minLat: 51.0, maxLat: 55.6, minLon: -10.8, 
 // comfortably inside the map, not right at its edge.
 export const BBOX_PAD_DEG = 0.3;
 
-// Ramer-Douglas-Peucker tolerance, in degrees — see header comment on why this is gentle.
-export const SIMPLIFY_TOLERANCE_DEG = 0.005;
+// Ramer-Douglas-Peucker tolerance, in degrees (~0.11km per 0.001°). Fine (0.001° ≈ 100m) rather
+// than coarse: the OSi islands and the mainland peninsulas are meant to be viewed zoomed-in on the
+// map, and a coarser value left them visibly blocky/"clunky". Costs bundle size (~175KB outline vs
+// ~66KB at 0.005°), acceptable next to the ~491KB places.json already precached.
+export const SIMPLIFY_TOLERANCE_DEG = 0.001;
 
 /**
  * True if bounding box `a` sits fully inside bounding box `b`. Pure, unit-tested — this is the

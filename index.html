@@ -290,7 +290,7 @@
      smaller places reveal as you zoom in — keeping any one view readable. */
   .map-town { display: none; pointer-events: none; }
   .map-svg.tier-1 .map-town-t1, .map-svg.tier-2 .map-town-t2,
-  .map-svg.tier-3 .map-town-t3, .map-svg.tier-4 .map-town-t4 { display: block; }
+  .map-svg.tier-3 .map-town-t3 { display: block; }
   /* Town labels are counter-scaled via font-size (calc + the same --map-marker-scale), NOT a CSS
      transform: iOS Safari/WebKit mishandles `transform-box: fill-box` on SVG <text> and hides it
      entirely (markers, being basic shapes, are unaffected). Position comes from the x/y attributes

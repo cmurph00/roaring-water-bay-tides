@@ -53,6 +53,6 @@ Licenses present: cc-by-4.0.
 - **Tailte Éireann / Ordnance Survey Ireland** (CC-BY-4.0) — "Islands, National 250k Map of
   Ireland" open dataset (https://data-osi.opendata.arcgis.com/) supplies the offshore ISLAND
   polygons (312, incl. small West Cork islands Natural Earth omits). Together a
-  2259-vertex simplified outline, used only as the SVG map picker's
+  5675-vertex simplified outline, used only as the SVG map picker's
   background shape (Task 19) — never a tide-prediction source. Regenerate via
   `node scripts/build-coastline.mjs`.
