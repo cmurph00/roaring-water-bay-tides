@@ -24,7 +24,9 @@ const MARKER_R = 4.2; // visible marker radius/half-size, px
 const TAP_R = 11; // invisible hit-target radius, px — generous tap target per spec (West Cork is dense)
 const YOU_R = 5.5;
 
-const MAX_ZOOM = 20; // deepest zoom-in (view spans ~1/20th of the country) — enough to resolve an offshore island
+const MAX_ZOOM = 120; // deepest zoom-in — lets a single small island (Sherkin ~3km) fill the view; the
+// coastline is simplified at ~100m (build-coastline.mjs), so beyond this the vector edges start to
+// show as straight segments — a sensible ceiling matched to the data's own resolution.
 const USER_ZOOM = 7; // initial zoom when "Use my location" set a position — a regional view around the user
 // Population-tiered place labels: each tier appears only past its zoom level (k = fullWidth/viewWidth),
 // so the country view shows only big towns and smaller places reveal as you zoom in. See townTier().
