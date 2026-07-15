@@ -31,6 +31,7 @@ const USER_ZOOM = 7; // initial zoom when "Use my location" set a position — a
 // Population-tiered place labels: each tier appears only past its zoom level (k = fullWidth/viewWidth),
 // so the country view shows only big towns and smaller places reveal as you zoom in. See townTier().
 const TIER_ZOOM = { t1: 3, t2: 5, t3: 8 };
+const LOWWATER_ZOOM = 6; // show the low-water/foreshore lines only once zoomed in past this (else just traces the coast)
 const WHEEL_STEP = 1.0015; // per wheel-delta unit; >1 so scrolling up zooms in
 const DBLTAP_MS = 300;
 
@@ -87,7 +88,7 @@ function trianglePoints(x, y, r) {
  *
  * Returns `{ svg, controller }`; controller has `{ zoomIn, zoomOut, reset }` for the on-map buttons.
  */
-export function buildMapSvg({ outline, gauges = [], beachModel = [], places = [], userLocation = null, onSelect, onHover } = {}) {
+export function buildMapSvg({ outline, gauges = [], beachModel = [], places = [], lowWater = [], userLocation = null, onSelect, onHover } = {}) {
   const bbox = outline?.bbox ?? { minLat: 51.2, maxLat: 55.6, minLon: -10.7, maxLon: -5.2 };
   const viewBox = computeViewBox(bbox, MAP_WIDTH);
   const W = viewBox.width;
@@ -100,6 +101,14 @@ export function buildMapSvg({ outline, gauges = [], beachModel = [], places = []
   });
 
   svg.appendChild(svgEl("rect", { x: 0, y: 0, width: fmt(W), height: fmt(H), class: "map-sea" }));
+
+  // Low-water / foreshore lines (OSi, CC-BY) — a PLANNING indicator of how far the sea retreats at
+  // low tide, NOT a navigation feature. Drawn under the land/markers, hidden until zoomed in
+  // (.show-lowwater, set by zoom in attachPanZoom) since at country scale it just traces the coast.
+  for (const line of lowWater) {
+    const points = line.map(([lat, lon]) => project(lat, lon, viewBox)).map((p) => `${fmt(p.x)},${fmt(p.y)}`).join(" ");
+    svg.appendChild(svgEl("polyline", { points, class: "map-lowwater" }));
+  }
 
   for (const line of outline?.polylines ?? []) {
     const points = line.map(([lat, lon]) => project(lat, lon, viewBox)).map((p) => `${fmt(p.x)},${fmt(p.y)}`).join(" ");
@@ -233,6 +242,7 @@ function attachPanZoom(svg, { W, H, viewBox, userLocation }) {
     svg.classList.toggle("tier-1", k >= TIER_ZOOM.t1);
     svg.classList.toggle("tier-2", k >= TIER_ZOOM.t2);
     svg.classList.toggle("tier-3", k >= TIER_ZOOM.t3);
+    svg.classList.toggle("show-lowwater", k >= LOWWATER_ZOOM);
   }
 
   // client px -> SVG user coords, using the element's rendered size and the current view.

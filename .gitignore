@@ -42,3 +42,8 @@ android/.gradle/
 android/local.properties
 android/app/src/main/assets/public/
 android/capacitor-cordova-android-plugins/
+
+# Raw OSi low-water mark (272MB ungeneralised open data) — regional subset baked into data/low-water.json
+data/osi-lowwater-raw.geojson
+# Raw OSi national coast (mainland coastline, baked into data/ireland-outline.json)
+data/osi-coast-raw.geojson

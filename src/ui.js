@@ -21,6 +21,7 @@ const EPA_INDEX_URL = "./data/epa-stations.json";
 const BEACHES_URL = "./data/beaches.json";
 const PLACES_URL = "./data/places.json";
 const OUTLINE_URL = "./data/ireland-outline.json";
+const LOWWATER_URL = "./data/low-water.json";
 const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local entry are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
@@ -82,6 +83,9 @@ let places = [];
 // polylines }` or null if the optional data file is missing/404 (same defaults-to-empty
 // contract as beaches/places above; src/map.js renders markers on a blank sea without it).
 let outline = null;
+// OSi low-water/foreshore lines (data/low-water.json — { lines: [[[lat,lon],...],...] }, CC-BY
+// Tailte Éireann) for the map's zoom-gated foreshore overlay; [] if the optional file is missing.
+let lowWater = [];
 // The user's last-geolocated {lat, lon} (Task 19) — set by useMyLocation(), used to render
 // the map's "you" dot and to compute a marker's distance when picked from the map. Distinct
 // from `currentSelection` below, which is about the selected STATION, not the user.
@@ -143,6 +147,14 @@ async function loadIndex() {
     outline = res.ok ? await res.json() : null;
   } catch {
     outline = null;
+  }
+
+  // OSi low-water/foreshore overlay — optional-enhancement contract as above ([] if absent).
+  try {
+    const res = await fetch(LOWWATER_URL);
+    lowWater = res.ok ? (await res.json()).lines ?? [] : [];
+  } catch {
+    lowWater = [];
   }
 }
 
@@ -455,6 +467,7 @@ function renderMapView() {
     gauges,
     beachModel,
     places,
+    lowWater,
     userLocation: currentUserLocation,
     onSelect: (entry) => {
       const distanceKm = currentUserLocation

@@ -288,6 +288,10 @@
   /* non-scaling-stroke keeps the coastline a constant ~0.9px on screen at ANY zoom — without it the
      stroke is in user units and balloons at deep zoom, inflating islands into fat merged blobs. */
   .map-land { fill: var(--map-land); stroke: var(--map-coast); stroke-width: 0.9px; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  /* Low-water / foreshore line (OSi, CC-BY) — planning indicator, not navigation. Hidden until
+     zoomed in (.show-lowwater); a muted teal line seaward of the coast. */
+  .map-lowwater { display: none; fill: none; stroke: var(--color-fall); stroke-width: 0.8px; opacity: 0.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .map-svg.show-lowwater .map-lowwater { display: block; }
   .map-marker { cursor: pointer; }
   .map-marker-hit { fill: transparent; }
   .map-marker-shape { stroke: var(--color-bg); stroke-width: 0.6; }
@@ -345,6 +349,8 @@
   .legend-swatch.gauge { border-radius: 50%; background: var(--color-fall); }
   .legend-swatch.beach-model { background: var(--color-accent); clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
   .legend-swatch.you { border-radius: 50%; background: var(--color-rise); }
+  .legend-swatch.lowwater { height: 3px; align-self: center; background: var(--color-fall); opacity: 0.5; }
+  .map-note { text-align: center; font-size: 0.62rem; color: var(--color-faint); margin: 0.5rem 0 0; line-height: 1.4; }
 
   .station-header {
     margin: 0 0 1.2rem; font-size: 0.85rem; color: var(--color-label); line-height: 1.5;
@@ -446,7 +452,9 @@
         <li><span class="legend-swatch gauge" aria-hidden="true"></span>🌊 Tide gauge</li>
         <li><span class="legend-swatch beach-model" aria-hidden="true"></span>📈 Beach model</li>
         <li><span class="legend-swatch you" aria-hidden="true"></span>📍 You</li>
+        <li><span class="legend-swatch lowwater" aria-hidden="true"></span>〰️ Low water (zoom in)</li>
       </ul>
+      <p class="map-note">Low-water line (OSi) shows the approximate foreshore exposed at low tide — for planning only, <strong>not for navigation</strong>.</p>
     </div>
 
     <p id="station-header" class="station-header">Locating nearest gauge&hellip;</p>
@@ -458,7 +466,7 @@
     <footer>
       <strong>Method:</strong> Harmonic tide predictions computed directly from the selected gauge station's own published constituents &mdash; no proxy station or hand-tuned offset. Heights are relative to that station's own chart datum; times are shown in the station's local timezone.<br/><br/>
       Station coverage and accuracy vary by data source. <strong>Planning use only. Never use for navigation.</strong>
-      <p class="credits">Tide data: NOAA (public domain) &amp; TICON-4 (CC BY 4.0) &middot; Irish predictions: Marine Institute (CC BY 4.0) &middot; Beaches: EPA (CC BY 4.0) &middot; EPA/MI beach model (CC BY 4.0) &middot; Place names: GeoNames (CC BY) &middot; Coastline: Natural Earth (public domain) &middot; Islands: Tailte &Eacute;ireann/OSi (CC BY 4.0)</p>
+      <p class="credits">Tide data: NOAA (public domain) &amp; TICON-4 (CC BY 4.0) &middot; Irish predictions: Marine Institute (CC BY 4.0) &middot; Beaches: EPA (CC BY 4.0) &middot; EPA/MI beach model (CC BY 4.0) &middot; Place names: GeoNames (CC BY) &middot; Coastline: Natural Earth (public domain) &middot; Islands &amp; low-water: Tailte &Eacute;ireann/OSi (CC BY 4.0)</p>
       <p class="origin">Made in Roaring Water Bay &middot; RWB Tides</p>
     </footer>
   </div>
