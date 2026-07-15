@@ -1,5 +1,6 @@
 [
   { "name": "Baltimore", "lat": 51.482, "lon": -9.373, "station": "Union_Hall" },
   { "name": "Castletownshend", "lat": 51.531, "lon": -9.181, "station": "Union_Hall" },
-  { "name": "Crookhaven", "lat": 51.472, "lon": -9.733, "station": "IESWBWC150_0000_0200_MODELLED" }
+  { "name": "Crookhaven", "lat": 51.472, "lon": -9.733, "station": "IESWBWC150_0000_0200_MODELLED" },
+  { "name": "Roberts Cove", "lat": 51.690, "lon": -8.272, "station": "Ringaskiddy" }
 ]

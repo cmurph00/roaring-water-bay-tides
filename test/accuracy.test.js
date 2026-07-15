@@ -12,8 +12,8 @@ import { getTides } from "../src/resolver.js";
 // (Crown Copyright) and gitignored, so this test SKIPS cleanly when the fixture is absent (e.g. CI /
 // a fresh clone). Thresholds guard against a regression in source selection, not perfection: weather
 // moves tide height more than these few minutes, and the offshore-model floor is ~10min in places.
-const MEDIAN_MAX_MIN = 8;
-const WORST_MAX_MIN = 14;
+const MEDIAN_MAX_MIN = 6;
+const WORST_MAX_MIN = 10;
 
 const dataDir = fileURLToPath(new URL("../data/", import.meta.url));
 const fixturePath = fileURLToPath(new URL("./fixtures/reference-tides.json", import.meta.url));
