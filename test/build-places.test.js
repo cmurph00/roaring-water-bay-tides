@@ -25,14 +25,28 @@ test("parseGeonamesLine parses a tab-separated GeoNames row into the fields we u
   assert.equal(row.longitude, -9.54798);
   assert.equal(row.featureClass, "P");
   assert.equal(row.featureCode, "PPL");
+  assert.equal(row.population, 700);
   assert.equal(row.countryCode, "IE");
 });
 
 // --- kindForRow ---------------------------------------------------------------
 
-test("kindForRow labels any populated-place feature_class as 'town'", () => {
+test("kindForRow labels real town/village populated-place codes as 'town'", () => {
   assert.equal(kindForRow({ featureClass: "P", featureCode: "PPL" }), "town");
   assert.equal(kindForRow({ featureClass: "P", featureCode: "PPLA2" }), "town");
+  assert.equal(kindForRow({ featureClass: "P", featureCode: "PPLC" }), "town"); // capital (Dublin)
+});
+
+test("kindForRow demotes crossroads/townland populated-place codes to 'locality'", () => {
+  // PPLL localities (e.g. "Mall Cross Roads"), PPLX sections, PPLF farms — searchable but not map-labelled.
+  assert.equal(kindForRow({ featureClass: "P", featureCode: "PPLL" }), "locality");
+  assert.equal(kindForRow({ featureClass: "P", featureCode: "PPLX" }), "locality");
+});
+
+test("rowToPlace carries population as `pop` when present, and omits it when zero", () => {
+  const base = { name: "Schull", asciiname: "Schull", alternatenames: "", latitude: 51.52, longitude: -9.55, featureClass: "P", featureCode: "PPL" };
+  assert.equal(rowToPlace({ ...base, population: 700 }).pop, 700);
+  assert.equal("pop" in rowToPlace({ ...base, population: 0 }), false);
 });
 
 test("kindForRow maps curated H/T/L feature codes to their kind", () => {

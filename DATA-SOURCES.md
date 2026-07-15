@@ -40,7 +40,7 @@ Licenses present: cc-by-4.0.
 
 - **GeoNames** (CC-BY-4.0) — https://www.geonames.org/ , via the Ireland country dump
   (https://download.geonames.org/export/dump/IE.zip). This product uses data from
-  GeoNames. Covers 2430 named coastal places (towns, harbours, bays, coves,
+  GeoNames. Covers 4539 named coastal places (towns, harbours, bays, coves,
   islands, ...) within ~8km of a real tide-prediction source, used for search only —
   a place resolves to the nearest real prediction station (see src/ui.js), not to
   GeoNames data. Regenerate via `node scripts/build-places.mjs`.

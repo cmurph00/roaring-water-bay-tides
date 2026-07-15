@@ -96,17 +96,27 @@ export function parseGeonamesLine(line) {
     featureClass: c[6],
     featureCode: c[7],
     countryCode: c[8],
+    population: Number(c[14]) || 0,
   };
 }
 
+// Populated-place feature codes that are a real town/village worth labelling on the map. Other
+// class-"P" codes — PPLL (localities: crossroads/townlands, ~3.9k in IE), PPLX (sections),
+// PPLF (farms), PPLQ (abandoned), PPLR/PPLS/PPLW — are the unreadable-clutter noise; we keep
+// them searchable as "locality" but never label them on the map. PPLC/PPLA* are capitals /
+// admin seats (Dublin, county towns) — definitely towns.
+const TOWN_PPL_CODES = new Set(["PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4", "PPLA5", "PPLC", "PPLG"]);
+
 /**
  * Resolves a parsed GeoNames row to our own "kind" label, or null if it's not a feature type
- * we ship (see COASTAL_FEATURE_KIND above). Any populated-place code (feature_class "P" —
- * PPL, PPLA, PPLL, PPLX, ...) is kept as "town"; class H/T/L rows are kept only for the
- * curated feature codes above; everything else is dropped.
+ * we ship (see COASTAL_FEATURE_KIND above). A populated place (feature_class "P") is a "town"
+ * only for the real town/village codes in TOWN_PPL_CODES (PPL, PPLA*, PPLC, ...); other P
+ * codes — PPLL crossroads/townlands, PPLX sections, PPLF farms — become "locality" (still
+ * searchable, but not map-labelled). Class H/T/L rows are kept only for the curated feature
+ * codes above; everything else is dropped.
  */
 export function kindForRow(row) {
-  if (row.featureClass === "P") return "town";
+  if (row.featureClass === "P") return TOWN_PPL_CODES.has(row.featureCode) ? "town" : "locality";
   return COASTAL_FEATURE_KIND[row.featureCode] ?? null;
 }
 
@@ -149,6 +159,7 @@ export function rowToPlace(row) {
   if (!Number.isFinite(row.latitude) || !Number.isFinite(row.longitude)) return null;
 
   const place = { name: row.name, latitude: row.latitude, longitude: row.longitude, kind };
+  if (row.population > 0) place.pop = row.population;
   const alt = altNamesForRow(row);
   if (alt.length > 0) place.alt = alt;
   return place;

@@ -283,20 +283,21 @@
   /* Pan/zoom: markers, labels and the you-dot are counter-scaled by --map-marker-scale (= 1/zoom)
      so they keep a roughly constant on-screen size as the SVG viewBox zooms in and out. */
   .map-marker-shape, .map-marker-hit, .map-you-shape,
-  .map-label, .map-town-label, .map-town-dot {
+  .map-town-label, .map-town-dot {
     transform: scale(var(--map-marker-scale, 1)); transform-box: fill-box; transform-origin: center;
   }
-  .map-label {
-    display: none; pointer-events: none; text-anchor: middle; font-size: 8px; font-weight: 600;
-    fill: var(--color-label); paint-order: stroke; stroke: var(--color-bg); stroke-width: 2px; stroke-linejoin: round;
-  }
-  .map-svg.show-labels .map-label { display: block; }
+  /* Population-tiered town labels: hidden by default; each tier is revealed once the SVG gains the
+     matching .tier-N class (set from the zoom level in src/map.js), so big towns appear first and
+     smaller places reveal as you zoom in — keeping any one view readable. */
   .map-town { display: none; pointer-events: none; }
-  .map-svg.show-labels .map-town { display: block; }
+  .map-svg.tier-1 .map-town-t1, .map-svg.tier-2 .map-town-t2,
+  .map-svg.tier-3 .map-town-t3, .map-svg.tier-4 .map-town-t4 { display: block; }
   .map-town-label {
-    text-anchor: middle; font-size: 7px; fill: var(--color-faint);
+    text-anchor: middle; font-size: 6.5px; fill: var(--color-faint);
     paint-order: stroke; stroke: var(--color-bg); stroke-width: 1.8px; stroke-linejoin: round;
   }
+  .map-town-t1 .map-town-label { font-size: 8px; font-weight: 600; fill: var(--color-label); }
+  .map-town-t2 .map-town-label { font-size: 7px; fill: var(--color-label); }
   .map-town-dot { fill: var(--color-faint); opacity: 0.55; }
   .map-zoom-controls { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; }
   .map-zoom-btn {

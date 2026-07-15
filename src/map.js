@@ -26,9 +26,19 @@ const YOU_R = 5.5;
 
 const MAX_ZOOM = 20; // deepest zoom-in (view spans ~1/20th of the country) — enough to resolve an offshore island
 const USER_ZOOM = 7; // initial zoom when "Use my location" set a position — a regional view around the user
-const LABEL_ZOOM = 3; // show place-name labels only once zoomed in at least this much (else too dense)
+// Population-tiered place labels: each tier appears only past its zoom level (k = fullWidth/viewWidth),
+// so the country view shows only big towns and smaller places reveal as you zoom in. See townTier().
+const TIER_ZOOM = { t1: 3, t2: 5, t3: 8, t4: 12 };
 const WHEEL_STEP = 1.0015; // per wheel-delta unit; >1 so scrolling up zooms in
 const DBLTAP_MS = 300;
+
+// GeoNames population -> label tier (t1 = biggest towns, t4 = tiny/unranked villages).
+function townTier(pop) {
+  if (pop >= 3000) return "t1";
+  if (pop >= 800) return "t2";
+  if (pop >= 150) return "t3";
+  return "t4";
+}
 
 function svgEl(name, attrs = {}) {
   const el = document.createElementNS(SVG_NS, name);
@@ -88,11 +98,8 @@ export function buildMapSvg({ outline, gauges = [], beachModel = [], places = []
     svg.appendChild(svgEl("polygon", { points, class: "map-land" }));
   }
 
-  const markerPts = []; // projected station positions, for de-duping town labels sitting on a marker
-
   function addMarker(entry, kind, label) {
     const { x, y } = project(entry.latitude, entry.longitude, viewBox);
-    markerPts.push({ x, y });
     const g = svgEl("g", {
       class: `map-marker map-marker-${kind}`,
       tabindex: "0",
@@ -107,15 +114,6 @@ export function buildMapSvg({ outline, gauges = [], beachModel = [], places = []
       g.appendChild(svgEl("polygon", { points: trianglePoints(x, y, MARKER_R), class: "map-marker-shape" }));
     } else {
       g.appendChild(svgEl("circle", { cx: fmt(x), cy: fmt(y), r: MARKER_R, class: "map-marker-shape" }));
-    }
-
-    // Place-name label — hidden until zoomed in (see LABEL_ZOOM / .show-labels below). The SVG
-    // viewport clips to the current viewBox, so when zoomed only the handful of labels actually
-    // near the view are painted, keeping a zoomed-in stretch of coast readable.
-    if (entry.name) {
-      const text = svgEl("text", { x: fmt(x), y: fmt(y - MARKER_R - 2.5), class: "map-label" });
-      text.textContent = entry.name;
-      g.appendChild(text);
     }
 
     const title = svgEl("title");
@@ -140,22 +138,16 @@ export function buildMapSvg({ outline, gauges = [], beachModel = [], places = []
   for (const entry of gauges) addMarker(entry, "gauge", "🌊 tide gauge");
   for (const entry of beachModel) addMarker(entry, "beach-model", "📈 beach model");
 
-  // GeoNames town/city labels (data/places.json, CC-BY) — geographic orientation, not tappable
-  // tide sources. Zoom-gated (.show-labels) and viewport-clipped like the marker labels, and a
-  // town sitting on top of a plotted station marker is skipped so its name isn't printed twice.
-  const TOWN_DEDUP = 2.2; // user units (~2.5 km) — treat a town this close to a marker as "already labelled"
+  // GeoNames town/city labels (data/places.json, CC-BY) — geographic orientation + a way to read
+  // which town a nearby marker belongs to. Density is controlled by POPULATION: each town is put
+  // in a tier by its GeoNames population, and each tier is revealed only past a matching zoom
+  // (see the tier toggles in attachPanZoom) so the full-country view shows only big towns and
+  // smaller places appear as you zoom in — instead of every crossroads at once. Localities
+  // (PPLL crossroads/townlands) are `kind:"locality"` from build-places.mjs and never labelled.
   for (const town of places) {
     if (town?.kind !== "town" || town.latitude == null || town.longitude == null) continue;
     const { x, y } = project(town.latitude, town.longitude, viewBox);
-    let onMarker = false;
-    for (const m of markerPts) {
-      if (Math.hypot(m.x - x, m.y - y) < TOWN_DEDUP) {
-        onMarker = true;
-        break;
-      }
-    }
-    if (onMarker) continue;
-    const g = svgEl("g", { class: "map-town" });
+    const g = svgEl("g", { class: `map-town map-town-${townTier(town.pop || 0)}` });
     g.appendChild(svgEl("circle", { cx: fmt(x), cy: fmt(y), r: 1.3, class: "map-town-dot" }));
     const text = svgEl("text", { x: fmt(x), y: fmt(y - 2.4), class: "map-town-label" });
     text.textContent = town.name;
@@ -215,7 +207,11 @@ function attachPanZoom(svg, { W, H, viewBox, userLocation }) {
     svg.setAttribute("viewBox", `${fmt(view.x)} ${fmt(view.y)} ${fmt(view.w)} ${fmt(view.h)}`);
     const scale = view.w / W; // = 1 / zoom
     svg.style.setProperty("--map-marker-scale", String(fmt(scale)));
-    svg.classList.toggle("show-labels", W / view.w >= LABEL_ZOOM);
+    const k = W / view.w; // current zoom factor
+    svg.classList.toggle("tier-1", k >= TIER_ZOOM.t1);
+    svg.classList.toggle("tier-2", k >= TIER_ZOOM.t2);
+    svg.classList.toggle("tier-3", k >= TIER_ZOOM.t3);
+    svg.classList.toggle("tier-4", k >= TIER_ZOOM.t4);
   }
 
   // client px -> SVG user coords, using the element's rendered size and the current view.
