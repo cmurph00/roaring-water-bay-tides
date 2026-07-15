@@ -2,11 +2,12 @@
 // the offline SVG map picker (Task 19). No map tiles, no external library: this is the one
 // and only source of the land shape drawn on <canvas>-free, pure-inline-SVG map in src/map.js.
 //
-// Source: Natural Earth 1:50m "Coastline" dataset (public domain — Natural Earth places no
-// restrictions on use, see https://www.naturalearthdata.com/about/terms-of-use/ — "No
-// permission is needed to use Natural Earth", no attribution required), fetched from the
-// nvkelso/natural-earth-vector GitHub mirror, a straight GeoJSON export of the official
-// Natural Earth shapefile releases with no additional license terms of its own.
+// Source: Natural Earth 1:10m "Coastline" (mainland + major islands, LineStrings) plus 1:10m
+// "Minor Islands" (small offshore islands, Polygons) — both public domain (Natural Earth places no
+// restrictions on use, see https://www.naturalearthdata.com/about/terms-of-use/ — "No permission
+// is needed to use Natural Earth", no attribution required), fetched from the
+// nvkelso/natural-earth-vector GitHub mirror, straight GeoJSON exports of the official Natural
+// Earth shapefile releases with no additional license terms of their own.
 //
 // Why the *coastline* dataset rather than admin_0_countries/admin_0_map_subunits: Ireland is
 // split across two Natural Earth "subunits" (the Republic, and Northern Ireland as part of
@@ -33,11 +34,18 @@
 // If the download fails or no Ireland-shaped ring is found, this BLOCKS (exit 1) rather than
 // falling back to a hand-drawn placeholder shape — an offline map is only honest if the
 // coastline it shows is real.
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 
+// Natural Earth 1:10m coastline supplies the Ireland MAINLAND ring (its largest Ireland-bbox ring).
 export const COASTLINE_URL =
-  "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_coastline.geojson";
+  "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_coastline.geojson";
 const RAW_PATH = "data/ne-coastline-raw.geojson";
+// ISLANDS come from OSi / Tailte Éireann "Islands — National 250k Map of Ireland" (CC-BY 4.0), a
+// manual open-data download from https://data-osi.opendata.arcgis.com/ (search "Islands National
+// 250k"). 312 named island Polygons — including the small West Cork ones (Hare, Long, Sherkin,
+// Clear, Whiddy, ...) that Natural Earth, even at 10m, is too coarse to carry. Gitignored raw
+// input; if absent, build() falls back to Natural Earth's own (major-only) island rings.
+const OSI_ISLANDS_PATH = "data/osi-islands-raw.geojson";
 const OUT_PATH = "data/ireland-outline.json";
 
 // Generous box for "is this coastline ring part of Ireland" — see header comment. Ireland's
@@ -146,36 +154,82 @@ export function selectIrelandRings(geojson, filterBbox = IRELAND_FILTER_BBOX) {
   return rings;
 }
 
-async function downloadCoastline() {
+/**
+ * Selects the small offshore islands that belong to Ireland out of the Natural Earth
+ * ne_10m_minor_islands FeatureCollection. Unlike the coastline dataset (open LineStrings), these
+ * are filled Polygon/MultiPolygon features; we take each polygon's outer ring (coordinates[0]),
+ * apply the same Ireland-bbox containment test, and return them as [lat, lon] rings — same shape
+ * selectIrelandRings returns, so build() can simplify and render them identically. Pure, unit-tested.
+ */
+export function selectIslandPolygons(geojson, filterBbox = IRELAND_FILTER_BBOX) {
+  const rings = [];
+  for (const feature of geojson.features ?? []) {
+    const geom = feature.geometry;
+    if (!geom) continue;
+    const polygons = geom.type === "Polygon" ? [geom.coordinates] : geom.type === "MultiPolygon" ? geom.coordinates : [];
+    for (const polygon of polygons) {
+      const outer = polygon?.[0];
+      if (!Array.isArray(outer)) continue;
+      const ring = ringToLatLon(outer);
+      if (bboxContained(computeBbox(ring), filterBbox)) rings.push(ring);
+    }
+  }
+  return rings;
+}
+
+async function downloadJson(url, path, label) {
   await mkdir("data", { recursive: true });
-  console.log("Downloading Natural Earth 1:50m coastline dataset...");
-  const res = await fetch(COASTLINE_URL);
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} fetching ${COASTLINE_URL}`);
+  console.log(`Downloading Natural Earth ${label}...`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} fetching ${url}`);
   const text = await res.text();
-  await writeFile(RAW_PATH, text);
+  await writeFile(path, text);
   return JSON.parse(text);
 }
 
 async function build() {
-  let geojson;
+  let coastline;
   try {
-    geojson = await downloadCoastline();
+    coastline = await downloadJson(COASTLINE_URL, RAW_PATH, "1:10m coastline");
   } catch (err) {
     console.error(`BLOCKED: failed to download the Natural Earth coastline dataset: ${err.message}`);
     process.exit(1);
   }
 
-  const rawRings = selectIrelandRings(geojson);
-  if (rawRings.length === 0) {
+  const neRings = selectIrelandRings(coastline);
+  if (neRings.length === 0) {
     console.error(
       "BLOCKED: no coastline ring matched IRELAND_FILTER_BBOX in the downloaded dataset — " +
         "refusing to write a hand-drawn placeholder outline."
     );
     process.exit(1);
   }
+  // Largest Ireland-bbox ring is the mainland; the rest are Natural Earth's own (major) islands.
+  neRings.sort((a, b) => b.length - a.length);
+  const mainland = neRings[0];
+
+  // Islands: prefer the OSi/Tailte Éireann dataset (comprehensive + includes the tiny West Cork
+  // islands). If the raw file isn't present, fall back to Natural Earth's own major island rings
+  // so the build still succeeds (just without the small islands).
+  let islandRings;
+  try {
+    const osi = JSON.parse(await readFile(OSI_ISLANDS_PATH, "utf8"));
+    islandRings = selectIslandPolygons(osi);
+    console.log(`Islands: OSi/Tailte Éireann dataset (${islandRings.length} island polygons).`);
+  } catch {
+    islandRings = neRings.slice(1);
+    console.warn(
+      `WARN: OSi islands file (${OSI_ISLANDS_PATH}) not found — falling back to ${islandRings.length} ` +
+        `Natural Earth islands (major only, no small West Cork islands).`
+    );
+  }
+
+  const rawRings = [mainland, ...islandRings];
 
   const rawVertexCount = rawRings.reduce((sum, r) => sum + r.length, 0);
-  const polylines = rawRings.map((ring) => simplifyPolyline(ring, SIMPLIFY_TOLERANCE_DEG));
+  // Drop rings that simplify below a drawable polygon (< 3 points) — micro-islets/rocks that
+  // Ramer-Douglas-Peucker collapses to a 1-2 point sliver would render as nothing but still add bytes.
+  const polylines = rawRings.map((ring) => simplifyPolyline(ring, SIMPLIFY_TOLERANCE_DEG)).filter((r) => r.length >= 3);
   const vertexCount = polylines.reduce((sum, r) => sum + r.length, 0);
 
   const rawBbox = computeBbox(rawRings.flat());

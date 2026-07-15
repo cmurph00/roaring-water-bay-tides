@@ -165,8 +165,10 @@ test("buildAttribution appends the Natural Earth section when coastlineVertexCou
     beachCount: null,
     coastlineVertexCount: 290,
   });
-  assert.match(text, /## Natural Earth coastline outline \(offline SVG map picker\)/);
-  assert.match(text, /Covers a 290-vertex/);
+  assert.match(text, /## Coastline \+ islands outline \(offline SVG map picker\)/);
+  assert.match(text, /\*\*Natural Earth\*\*/);
+  assert.match(text, /\*\*Tailte Éireann \/ Ordnance Survey Ireland\*\* \(CC-BY-4\.0\)/);
+  assert.match(text, /290-vertex/);
   assert.match(text, /node scripts\/build-coastline\.mjs/);
 });
 
@@ -184,7 +186,7 @@ test("buildAttribution includes MI, EPA-beaches, EPA tide-model, GeoNames, and N
   const beachIdx = text.indexOf("EPA (Ireland) named bathing-water beaches");
   const epaIdx = text.indexOf("EPA/Marine Institute beach tide model");
   const placesIdx = text.indexOf("GeoNames coastal-place gazetteer");
-  const coastlineIdx = text.indexOf("Natural Earth coastline outline");
+  const coastlineIdx = text.indexOf("Coastline + islands outline");
   assert.ok(
     miIdx < beachIdx && beachIdx < epaIdx && epaIdx < placesIdx && placesIdx < coastlineIdx,
     "sections must appear in introduction order"

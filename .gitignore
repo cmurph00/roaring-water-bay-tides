@@ -24,8 +24,11 @@ data/*.csv
 data/IE.zip
 data/IE.txt
 
-# Raw Natural Earth coastline download (regenerate via scripts/build-coastline.mjs)
+# Raw Natural Earth coastline (mainland) + OSi/Tailte Éireann islands (islands) — inputs to
+# scripts/build-coastline.mjs. The coastline is re-downloaded by the script; the OSi islands
+# file is a manual open-data download (see build-coastline.mjs header for the source URL).
 data/ne-coastline-raw.geojson
+data/osi-islands-raw.geojson
 
 # Capacitor web assembly output (regenerate via `npm run build:www`)
 www/

@@ -125,12 +125,16 @@ export function buildAttribution({
 
   if (coastlineVertexCount != null) {
     attribution +=
-      `\n## Natural Earth coastline outline (offline SVG map picker)\n\n` +
+      `\n## Coastline + islands outline (offline SVG map picker)\n\n` +
       `- **Natural Earth** (public domain, no attribution required — see\n` +
-      `  https://www.naturalearthdata.com/about/terms-of-use/) — 1:50m Coastline dataset, via the\n` +
-      `  nvkelso/natural-earth-vector GitHub mirror. Covers a ${coastlineVertexCount}-vertex\n` +
-      `  simplified outline of Ireland, used only as the SVG map picker's background shape (Task\n` +
-      `  19) — never a tide-prediction source. Regenerate via \`node scripts/build-coastline.mjs\`.\n`;
+      `  https://www.naturalearthdata.com/about/terms-of-use/) — 1:10m Coastline dataset, via the\n` +
+      `  nvkelso/natural-earth-vector GitHub mirror — supplies the Ireland MAINLAND ring.\n` +
+      `- **Tailte Éireann / Ordnance Survey Ireland** (CC-BY-4.0) — "Islands, National 250k Map of\n` +
+      `  Ireland" open dataset (https://data-osi.opendata.arcgis.com/) supplies the offshore ISLAND\n` +
+      `  polygons (312, incl. small West Cork islands Natural Earth omits). Together a\n` +
+      `  ${coastlineVertexCount}-vertex simplified outline, used only as the SVG map picker's\n` +
+      `  background shape (Task 19) — never a tide-prediction source. Regenerate via\n` +
+      `  \`node scripts/build-coastline.mjs\`.\n`;
   }
 
   return attribution;

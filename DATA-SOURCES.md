@@ -45,10 +45,14 @@ Licenses present: cc-by-4.0.
   a place resolves to the nearest real prediction station (see src/ui.js), not to
   GeoNames data. Regenerate via `node scripts/build-places.mjs`.
 
-## Natural Earth coastline outline (offline SVG map picker)
+## Coastline + islands outline (offline SVG map picker)
 
 - **Natural Earth** (public domain, no attribution required — see
-  https://www.naturalearthdata.com/about/terms-of-use/) — 1:50m Coastline dataset, via the
-  nvkelso/natural-earth-vector GitHub mirror. Covers a 290-vertex
-  simplified outline of Ireland, used only as the SVG map picker's background shape (Task
-  19) — never a tide-prediction source. Regenerate via `node scripts/build-coastline.mjs`.
+  https://www.naturalearthdata.com/about/terms-of-use/) — 1:10m Coastline dataset, via the
+  nvkelso/natural-earth-vector GitHub mirror — supplies the Ireland MAINLAND ring.
+- **Tailte Éireann / Ordnance Survey Ireland** (CC-BY-4.0) — "Islands, National 250k Map of
+  Ireland" open dataset (https://data-osi.opendata.arcgis.com/) supplies the offshore ISLAND
+  polygons (312, incl. small West Cork islands Natural Earth omits). Together a
+  2259-vertex simplified outline, used only as the SVG map picker's
+  background shape (Task 19) — never a tide-prediction source. Regenerate via
+  `node scripts/build-coastline.mjs`.

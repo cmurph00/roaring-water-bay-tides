@@ -8,6 +8,7 @@ import {
   simplifyPolyline,
   ringToLatLon,
   selectIrelandRings,
+  selectIslandPolygons,
 } from "../scripts/build-coastline.mjs";
 
 // --- bboxContained -----------------------------------------------------------------
@@ -147,6 +148,30 @@ test("selectIrelandRings drops a ring extending far outside the filter box (e.g.
     ],
   };
   assert.deepEqual(selectIrelandRings(geojson), []);
+});
+
+// --- selectIslandPolygons ----------------------------------------------------------------
+
+test("selectIslandPolygons keeps an in-box Polygon's outer ring, as [lat, lon] pairs", () => {
+  const geojson = {
+    features: [
+      { geometry: { type: "Polygon", coordinates: [[[-9.5, 51.45], [-9.48, 51.46], [-9.5, 51.45]]] } },
+    ],
+  };
+  const rings = selectIslandPolygons(geojson);
+  assert.equal(rings.length, 1);
+  assert.deepEqual(rings[0][0], [51.45, -9.5]);
+});
+
+test("selectIslandPolygons handles MultiPolygon and drops out-of-box islands", () => {
+  const geojson = {
+    features: [
+      { geometry: { type: "MultiPolygon", coordinates: [[[[-9.5, 51.45], [-9.48, 51.46], [-9.5, 51.45]]]] } }, // in box
+      { geometry: { type: "Polygon", coordinates: [[[2.0, 48.0], [2.1, 48.1], [2.0, 48.0]]] } }, // France, out
+    ],
+  };
+  const rings = selectIslandPolygons(geojson);
+  assert.equal(rings.length, 1);
 });
 
 test("selectIrelandRings ignores non-LineString features (e.g. Point/Polygon)", () => {
