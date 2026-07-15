@@ -1,5 +1,4 @@
 import {
-  nearestStation,
   searchStations,
   searchBeaches,
   searchPlaces,
@@ -10,6 +9,7 @@ import {
   haversineKm,
 } from "./location.js";
 import { getTides } from "./resolver.js";
+import { resolveSpot } from "./resolve-spot.js";
 import { applyCorrection } from "./correction.js";
 import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from "./format.js";
 import { initThemeToggle } from "./theme.js";
@@ -22,6 +22,7 @@ const BEACHES_URL = "./data/beaches.json";
 const PLACES_URL = "./data/places.json";
 const OUTLINE_URL = "./data/ireland-outline.json";
 const LOWWATER_URL = "./data/low-water.json";
+const OVERRIDES_URL = "./data/spot-overrides.json";
 const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local entry are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
@@ -86,6 +87,10 @@ let outline = null;
 // OSi low-water/foreshore lines (data/low-water.json — { lines: [[[lat,lon],...],...] }, CC-BY
 // Tailte Éireann) for the map's zoom-gated foreshore overlay; [] if the optional file is missing.
 let lowWater = [];
+// Validated per-spot source overrides (data/spot-overrides.json, Task 22) — [] if absent. Applied
+// via resolveSpot() to both search-alias clicks and geolocation so a spot like Baltimore resolves to
+// its validated best gauge rather than a poor nearest offshore node.
+let overrides = [];
 // The user's last-geolocated {lat, lon} (Task 19) — set by useMyLocation(), used to render
 // the map's "you" dot and to compute a marker's distance when picked from the map. Distinct
 // from `currentSelection` below, which is about the selected STATION, not the user.
@@ -155,6 +160,14 @@ async function loadIndex() {
     lowWater = res.ok ? (await res.json()).lines ?? [] : [];
   } catch {
     lowWater = [];
+  }
+
+  // Validated per-spot source overrides — same optional-enhancement contract ([] if absent).
+  try {
+    const res = await fetch(OVERRIDES_URL);
+    overrides = res.ok ? await res.json() : [];
+  } catch {
+    overrides = [];
   }
 }
 
@@ -308,7 +321,7 @@ function closeSearchDropdown() {
 function wireLocalityClick(li, item, notFoundMessage) {
   li.addEventListener("click", () => {
     closeSearchDropdown();
-    const nearest = nearestStation(item.latitude, item.longitude, index);
+    const nearest = resolveSpot(item.latitude, item.longitude, index, overrides);
     if (!nearest) {
       renderError(notFoundMessage);
       return;
@@ -430,7 +443,7 @@ async function useMyLocation() {
     const { lat, lon } = await detectLocation();
     currentUserLocation = { lat, lon };
     if (isMapViewActive()) renderMapView(); // refresh the "you" dot if the map is on screen
-    const result = nearestStation(lat, lon, index);
+    const result = resolveSpot(lat, lon, index, overrides);
     if (!result) {
       renderError("Couldn't get your location — search for a gauge or pick a county.");
       return;

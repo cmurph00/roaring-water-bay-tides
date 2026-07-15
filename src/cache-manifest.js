@@ -2,7 +2,7 @@
 // Per-station JSON under ./data/ is cached at runtime on first view (cache-first in sw.js).
 // CACHE_VERSION is rewritten by scripts/build-data.mjs on every successful data build, so
 // regenerating the dataset auto-invalidates the runtime data cache.
-export const CACHE_VERSION = "v848-20260715s";
+export const CACHE_VERSION = "v849-20260715t";
 
 export const CACHE_ASSETS = [
   "./index.html",
@@ -14,6 +14,7 @@ export const CACHE_ASSETS = [
   "./data/places.json",
   "./data/ireland-outline.json",
   "./data/low-water.json",
+  "./data/spot-overrides.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./src/ui.js",
