@@ -18,6 +18,9 @@ data/*.csv
 data/IE.zip
 data/IE.txt
 
+# Raw Natural Earth coastline download (regenerate via scripts/build-coastline.mjs)
+data/ne-coastline-raw.geojson
+
 # Capacitor web assembly output (regenerate via `npm run build:www`)
 www/
 

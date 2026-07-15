@@ -61,7 +61,15 @@ function toIndexEntry(s) {
  * data/mi-stations.json / data/beaches.json, or null when that dataset doesn't exist), so a
  * `build:data` rerun reproduces those sections instead of dropping them.
  */
-export function buildAttribution({ stationCount, licenses, miCount, beachCount, epaCount = null, placesCount = null }) {
+export function buildAttribution({
+  stationCount,
+  licenses,
+  miCount,
+  beachCount,
+  epaCount = null,
+  placesCount = null,
+  coastlineVertexCount = null,
+}) {
   let attribution =
     `# Data Sources\n\n` +
     `Tide station harmonic constituents used in this app:\n\n` +
@@ -115,6 +123,16 @@ export function buildAttribution({ stationCount, licenses, miCount, beachCount, 
       `  GeoNames data. Regenerate via \`node scripts/build-places.mjs\`.\n`;
   }
 
+  if (coastlineVertexCount != null) {
+    attribution +=
+      `\n## Natural Earth coastline outline (offline SVG map picker)\n\n` +
+      `- **Natural Earth** (public domain, no attribution required — see\n` +
+      `  https://www.naturalearthdata.com/about/terms-of-use/) — 1:50m Coastline dataset, via the\n` +
+      `  nvkelso/natural-earth-vector GitHub mirror. Covers a ${coastlineVertexCount}-vertex\n` +
+      `  simplified outline of Ireland, used only as the SVG map picker's background shape (Task\n` +
+      `  19) — never a tide-prediction source. Regenerate via \`node scripts/build-coastline.mjs\`.\n`;
+  }
+
   return attribution;
 }
 
@@ -133,6 +151,20 @@ async function indexCount(path) {
   try {
     const parsed = JSON.parse(await readFile(path, "utf8"));
     return Array.isArray(parsed) ? parsed.length : null;
+  } catch {
+    return null;
+  }
+}
+
+// Reads data/ireland-outline.json's total vertex count across all polylines, or null if the
+// file is absent — same "snapshot before the data/ wipe" contract as indexCount above, just
+// for the { bbox, polylines } shape (not a plain array) scripts/build-coastline.mjs emits.
+async function outlineVertexCount(path) {
+  if (!(await fileExists(path))) return null;
+  try {
+    const parsed = JSON.parse(await readFile(path, "utf8"));
+    if (!Array.isArray(parsed?.polylines)) return null;
+    return parsed.polylines.reduce((sum, line) => sum + line.length, 0);
   } catch {
     return null;
   }
@@ -160,6 +192,7 @@ async function build() {
   const beachCount = await indexCount("data/beaches.json");
   const epaCount = await indexCount("data/epa-stations.json");
   const placesCount = await indexCount("data/places.json");
+  const coastlineVertexCount = await outlineVertexCount("data/ireland-outline.json");
 
   await rm("data", { recursive: true, force: true });
   await mkdir("data/stations", { recursive: true });
@@ -177,6 +210,7 @@ async function build() {
     beachCount,
     epaCount,
     placesCount,
+    coastlineVertexCount,
   });
   await writeFile("DATA-SOURCES.md", attribution);
 

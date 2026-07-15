@@ -44,3 +44,11 @@ Licenses present: cc-by-4.0.
   islands, ...) within ~8km of a real tide-prediction source, used for search only —
   a place resolves to the nearest real prediction station (see src/ui.js), not to
   GeoNames data. Regenerate via `node scripts/build-places.mjs`.
+
+## Natural Earth coastline outline (offline SVG map picker)
+
+- **Natural Earth** (public domain, no attribution required — see
+  https://www.naturalearthdata.com/about/terms-of-use/) — 1:50m Coastline dataset, via the
+  nvkelso/natural-earth-vector GitHub mirror. Covers a 290-vertex
+  simplified outline of Ireland, used only as the SVG map picker's background shape (Task
+  19) — never a tide-prediction source. Regenerate via `node scripts/build-coastline.mjs`.

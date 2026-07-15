@@ -147,3 +147,45 @@ test("buildAttribution includes MI, EPA-beaches, EPA tide-model, and GeoNames se
   const placesIdx = text.indexOf("GeoNames coastal-place gazetteer");
   assert.ok(miIdx < beachIdx && beachIdx < epaIdx && epaIdx < placesIdx, "sections must appear in introduction order");
 });
+
+// coastlineVertexCount (Task 19): the Natural Earth coastline outline section, same
+// durability pattern — omitted when absent, appended when present.
+
+test("buildAttribution omits the Natural Earth section when coastlineVertexCount is absent", () => {
+  const text = buildAttribution({ stationCount: 833, licenses: ["cc-by-4.0"], miCount: null, beachCount: null });
+  assert.doesNotMatch(text, /Natural Earth/);
+});
+
+test("buildAttribution appends the Natural Earth section when coastlineVertexCount is present", () => {
+  const text = buildAttribution({
+    stationCount: 833,
+    licenses: ["cc-by-4.0"],
+    miCount: null,
+    beachCount: null,
+    coastlineVertexCount: 290,
+  });
+  assert.match(text, /## Natural Earth coastline outline \(offline SVG map picker\)/);
+  assert.match(text, /Covers a 290-vertex/);
+  assert.match(text, /node scripts\/build-coastline\.mjs/);
+});
+
+test("buildAttribution includes MI, EPA-beaches, EPA tide-model, GeoNames, and Natural Earth sections together, in that order", () => {
+  const text = buildAttribution({
+    stationCount: 833,
+    licenses: ["cc-by-4.0"],
+    miCount: 38,
+    beachCount: 150,
+    epaCount: 32,
+    placesCount: 2430,
+    coastlineVertexCount: 290,
+  });
+  const miIdx = text.indexOf("Marine Institute (Ireland) offline predictions");
+  const beachIdx = text.indexOf("EPA (Ireland) named bathing-water beaches");
+  const epaIdx = text.indexOf("EPA/Marine Institute beach tide model");
+  const placesIdx = text.indexOf("GeoNames coastal-place gazetteer");
+  const coastlineIdx = text.indexOf("Natural Earth coastline outline");
+  assert.ok(
+    miIdx < beachIdx && beachIdx < epaIdx && epaIdx < placesIdx && placesIdx < coastlineIdx,
+    "sections must appear in introduction order"
+  );
+});

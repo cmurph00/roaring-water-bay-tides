@@ -192,11 +192,33 @@
   .compass .arm-v, .compass .arm-h { fill: var(--color-accent); }
   .compass .center { fill: var(--color-eyebrow); }
 
+  /* View toggle (Task 19): switches the picker between the original search/country/list
+   * panel and the offline SVG map. Same pill-button visual language as .theme-toggle. */
+  .view-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .view-toggle-btn {
+    background: transparent; color: var(--color-label); border: 1px solid var(--color-field-border);
+    border-radius: 999px; padding: 0.38rem 1rem; font-family: 'Space Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .view-toggle-btn:hover { color: var(--color-eyebrow); border-color: var(--color-eyebrow); }
+  .view-toggle-btn.active { background: var(--color-accent); color: var(--color-accent-contrast); border-color: var(--color-accent); }
+
   .controls {
     display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-end;
     background: var(--color-panel-flat); border: 1px solid var(--color-border); border-radius: 10px;
     padding: 1rem; margin-bottom: 1.8rem;
   }
+
+  /* Wraps the country-filter + search-field pair so the view toggle can hide/show them as
+   * one unit (the "list panel") without disturbing .controls' own flex layout — this is a
+   * sub-flex-container of .controls, not a plain block, so its children still wrap/size the
+   * same as when they sat directly in .controls. */
+  #list-panel { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-end; flex: 1 1 auto; }
+  /* #list-panel's own `display: flex` above (an ID selector) would otherwise outrank the
+   * browser default `[hidden] { display: none }` (a plain attribute selector) — this rule's
+   * higher specificity (ID + attribute) restores hidden's effect when JS sets it. */
+  #list-panel[hidden] { display: none; }
 
   .field { display: flex; flex-direction: column; gap: 0.35rem; }
   .field label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-label); }
@@ -237,6 +259,35 @@
   }
   .search-results li:first-child { border-top: none; }
   .search-results li:hover { background: var(--color-panel-flat); color: var(--color-eyebrow); }
+
+  /* Offline SVG map picker (Task 19) — pure inline SVG, no tiles/canvas/external library.
+   * Land/sea/marker colours are all existing theme custom properties, so the map repaints
+   * correctly on the light/dark toggle with no extra rules of its own. */
+  .map-panel {
+    background: var(--color-panel-flat); border: 1px solid var(--color-border); border-radius: 10px;
+    padding: 1rem; margin-bottom: 1.8rem;
+  }
+  .map-svg-container { display: flex; justify-content: center; }
+  .map-svg { width: 100%; max-width: 340px; height: auto; display: block; }
+  .map-sea { fill: var(--color-input-bg); }
+  .map-land { fill: var(--color-panel-a); stroke: var(--color-field-border); stroke-width: 1; stroke-linejoin: round; }
+  .map-marker { cursor: pointer; }
+  .map-marker-hit { fill: transparent; }
+  .map-marker-shape { stroke: var(--color-bg); stroke-width: 0.6; }
+  .map-marker-gauge .map-marker-shape { fill: var(--color-fall); }
+  .map-marker-beach-model .map-marker-shape { fill: var(--color-accent); }
+  .map-marker:hover .map-marker-shape, .map-marker:focus .map-marker-shape { fill: var(--color-eyebrow); }
+  .map-marker:focus { outline: none; }
+  .map-you-shape { fill: var(--color-rise); stroke: var(--color-bg); stroke-width: 1; }
+  .map-hint {
+    text-align: center; font-size: 0.72rem; color: var(--color-label); margin: 0.6rem 0 0; min-height: 1.2em;
+  }
+  .map-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.9rem; margin: 0.7rem 0 0; padding: 0; list-style: none; }
+  .map-legend li { display: flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; color: var(--color-label); }
+  .legend-swatch { display: inline-block; width: 10px; height: 10px; flex: none; }
+  .legend-swatch.gauge { border-radius: 50%; background: var(--color-fall); }
+  .legend-swatch.beach-model { background: var(--color-accent); clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
+  .legend-swatch.you { border-radius: 50%; background: var(--color-rise); }
 
   .station-header {
     margin: 0 0 1.2rem; font-size: 0.85rem; color: var(--color-label); line-height: 1.5;
@@ -298,17 +349,24 @@
       <p class="sub">Harmonic predictions from the nearest of 800+ European gauge stations, computed directly &mdash; no proxy station, no hand-tuned offset. Not for navigation.</p>
     </header>
 
+    <div class="view-toggle" id="view-toggle" role="group" aria-label="Choose how to pick a station">
+      <button type="button" class="view-toggle-btn" data-view="list">List</button>
+      <button type="button" class="view-toggle-btn" data-view="map">Map</button>
+    </div>
+
     <div class="controls">
-      <div class="field">
-        <label for="country-filter">Country</label>
-        <select id="country-filter">
-          <option value="">All countries</option>
-        </select>
-      </div>
-      <div class="field search-field">
-        <label for="station-search">Find a gauge</label>
-        <input type="text" id="station-search" placeholder="Search station or country&hellip;" autocomplete="off" />
-        <ul id="search-results" class="search-results"></ul>
+      <div id="list-panel">
+        <div class="field">
+          <label for="country-filter">Country</label>
+          <select id="country-filter">
+            <option value="">All countries</option>
+          </select>
+        </div>
+        <div class="field search-field">
+          <label for="station-search">Find a gauge</label>
+          <input type="text" id="station-search" placeholder="Search station or country&hellip;" autocomplete="off" />
+          <ul id="search-results" class="search-results"></ul>
+        </div>
       </div>
       <div class="field">
         <label for="day-count">Days</label>
@@ -323,6 +381,16 @@
       <button id="use-location">Use my location</button>
     </div>
 
+    <div class="map-panel" id="map-panel" hidden>
+      <div id="map-svg-container" class="map-svg-container"></div>
+      <p id="map-hint" class="map-hint">Tap a marker to see its tides.</p>
+      <ul class="map-legend">
+        <li><span class="legend-swatch gauge" aria-hidden="true"></span>🌊 Tide gauge</li>
+        <li><span class="legend-swatch beach-model" aria-hidden="true"></span>📈 Beach model</li>
+        <li><span class="legend-swatch you" aria-hidden="true"></span>📍 You</li>
+      </ul>
+    </div>
+
     <p id="station-header" class="station-header">Locating nearest gauge&hellip;</p>
 
     <div id="results">
@@ -332,7 +400,7 @@
     <footer>
       <strong>Method:</strong> Harmonic tide predictions computed directly from the selected gauge station's own published constituents &mdash; no proxy station or hand-tuned offset. Heights are relative to that station's own chart datum; times are shown in the station's local timezone.<br/><br/>
       Station coverage and accuracy vary by data source. <strong>Planning use only. Never use for navigation.</strong>
-      <p class="credits">Tide data: NOAA (public domain) &amp; TICON-4 (CC BY 4.0) &middot; Irish predictions: Marine Institute (CC BY 4.0) &middot; Beaches: EPA (CC BY 4.0) &middot; EPA/MI beach model (CC BY 4.0) &middot; Place names: GeoNames (CC BY)</p>
+      <p class="credits">Tide data: NOAA (public domain) &amp; TICON-4 (CC BY 4.0) &middot; Irish predictions: Marine Institute (CC BY 4.0) &middot; Beaches: EPA (CC BY 4.0) &middot; EPA/MI beach model (CC BY 4.0) &middot; Place names: GeoNames (CC BY) &middot; Map outline: Natural Earth (public domain)</p>
     </footer>
   </div>
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeStationIndexes, stationSourceLabel } from "../src/ui.js";
+import { mergeStationIndexes, stationSourceLabel, mapMarkerSources } from "../src/ui.js";
 
 // mergeStationIndexes(ticon, mi): Marine Institute (offline, real published predictions)
 // is preferred over the general TICON/NOAA harmonic dataset for Irish stations. Keep every
@@ -96,4 +96,44 @@ test("stationSourceLabel calls an MI station a 'tide gauge'", () => {
 
 test("stationSourceLabel calls a TICON station (no source field) a 'tide gauge'", () => {
   assert.equal(stationSourceLabel({}), "tide gauge");
+});
+
+// mapMarkerSources (Task 19): partitions the merged index into the map's two marker types.
+
+test("mapMarkerSources puts EPA entries in beachModel, not gauges", () => {
+  const index = [{ id: "e", name: "E", country: "Ireland", source: "epa" }];
+  const { gauges, beachModel } = mapMarkerSources(index);
+  assert.deepEqual(gauges, []);
+  assert.deepEqual(beachModel, index);
+});
+
+test("mapMarkerSources puts MI entries in gauges", () => {
+  const index = [{ id: "m", name: "M", country: "Ireland", source: "mi" }];
+  const { gauges, beachModel } = mapMarkerSources(index);
+  assert.deepEqual(gauges, index);
+  assert.deepEqual(beachModel, []);
+});
+
+test("mapMarkerSources puts an Irish TICON entry (no source field) in gauges", () => {
+  const index = [{ id: "t", name: "T", country: "Ireland" }];
+  const { gauges, beachModel } = mapMarkerSources(index);
+  assert.deepEqual(gauges, index);
+  assert.deepEqual(beachModel, []);
+});
+
+test("mapMarkerSources excludes non-Irish TICON entries entirely (map only covers Ireland)", () => {
+  const index = [{ id: "d", name: "Dover", country: "United Kingdom" }];
+  const { gauges, beachModel } = mapMarkerSources(index);
+  assert.deepEqual(gauges, []);
+  assert.deepEqual(beachModel, []);
+});
+
+test("mapMarkerSources partitions a mixed index correctly", () => {
+  const epa = { id: "e", name: "E", country: "Ireland", source: "epa" };
+  const mi = { id: "m", name: "M", country: "Ireland", source: "mi" };
+  const ticonIreland = { id: "t", name: "T", country: "Ireland" };
+  const ticonElsewhere = { id: "d", name: "Dover", country: "United Kingdom" };
+  const { gauges, beachModel } = mapMarkerSources([epa, mi, ticonIreland, ticonElsewhere]);
+  assert.deepEqual(gauges, [mi, ticonIreland]);
+  assert.deepEqual(beachModel, [epa]);
 });

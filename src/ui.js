@@ -12,20 +12,25 @@ import { getTides } from "./resolver.js";
 import { applyCorrection } from "./correction.js";
 import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from "./format.js";
 import { initThemeToggle } from "./theme.js";
+import { renderMap } from "./map.js";
 
 const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
 const EPA_INDEX_URL = "./data/epa-stations.json";
 const BEACHES_URL = "./data/beaches.json";
 const PLACES_URL = "./data/places.json";
+const OUTLINE_URL = "./data/ireland-outline.json";
 const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local entry are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
 const epaStationUrl = (id) => `./data/epa/${id}.json`;
 const LS_KEY = "rwb.selectedStationId";
 const LS_DAYS_KEY = "rwb.days";
+const LS_VIEW_KEY = "rwb.view";
 const VALID_DAY_COUNTS = [1, 3, 5, 7, 10];
+const VALID_VIEWS = ["list", "map"];
 const DEFAULT_DAY_COUNT = 3;
+const DEFAULT_VIEW = "list";
 const MAX_RESULTS = 50;
 
 // Preference order: EPA > MI > TICON. EPA model nodes (offline, CC-BY-4.0) are the most
@@ -71,6 +76,15 @@ let beaches = [];
 // hand-maintained data/named-spots.json (Task 24) — Baltimore/Schull/Crookhaven/Cape Clear
 // are now just ordinary entries in this gazetteer, like any other coastal place.
 let places = [];
+// Ireland coastline outline for the Task 19 SVG map picker (data/ireland-outline.json,
+// scripts/build-coastline.mjs — Natural Earth 1:50m coastline, public domain) — `{ bbox,
+// polylines }` or null if the optional data file is missing/404 (same defaults-to-empty
+// contract as beaches/places above; src/map.js renders markers on a blank sea without it).
+let outline = null;
+// The user's last-geolocated {lat, lon} (Task 19) — set by useMyLocation(), used to render
+// the map's "you" dot and to compute a marker's distance when picked from the map. Distinct
+// from `currentSelection` below, which is about the selected STATION, not the user.
+let currentUserLocation = null;
 // The currently-selected station (entry + distance + optional resolved-from locality
 // name), kept so the day-count control can re-render without re-running
 // search/geolocation/selection.
@@ -113,6 +127,16 @@ async function loadIndex() {
     places = res.ok ? await res.json() : [];
   } catch {
     places = [];
+  }
+
+  // Ireland coastline outline (Task 19 map picker) — same optional-enhancement contract:
+  // a missing/404 data/ireland-outline.json must not break the rest of the app, just leave
+  // the map view without a coastline (markers on a blank sea).
+  try {
+    const res = await fetch(OUTLINE_URL);
+    outline = res.ok ? await res.json() : null;
+  } catch {
+    outline = null;
   }
 }
 
@@ -182,6 +206,19 @@ function geolocationErrorMessage(err) {
 // not a gauge at all. Exported for unit testing alongside mergeStationIndexes above.
 export function stationSourceLabel(station) {
   return station.source === "epa" ? "beach model" : "tide gauge";
+}
+
+// Task 19 (offline SVG map picker): partitions the already-merged/deduped EPA>MI>TICON
+// `index` into the two marker types shown on the map — gauges (Marine Institute stations
+// plus Irish TICON entries, i.e. every non-EPA Irish source) and beach-model nodes (EPA).
+// Non-Irish TICON entries (the bulk of `index` — European gauges outside Ireland) are
+// excluded entirely; the map only covers Ireland's bbox (data/ireland-outline.json), and the
+// 2400-entry gazetteer (beaches/places) is deliberately never plotted — text-search only, per
+// spec, since it would be far too dense. Pure, unit-tested.
+export function mapMarkerSources(index) {
+  const gauges = index.filter((s) => s.country === "Ireland" && s.source !== "epa");
+  const beachModel = index.filter((s) => s.source === "epa");
+  return { gauges, beachModel };
 }
 
 // `locality` is set only when the current selection was reached via a beach/named-spot
@@ -377,6 +414,8 @@ async function useMyLocation() {
   renderStatus("Locating your nearest gauge…", "loading");
   try {
     const { lat, lon } = await detectLocation();
+    currentUserLocation = { lat, lon };
+    if (isMapViewActive()) renderMapView(); // refresh the "you" dot if the map is on screen
     const result = nearestStation(lat, lon, index);
     if (!result) {
       renderError("Couldn't get your location — search for a gauge or pick a country.");
@@ -395,12 +434,80 @@ async function useMyLocation() {
   }
 }
 
+// --- Task 19: offline SVG map picker --------------------------------------------------
+
+function isMapViewActive() {
+  const panel = document.getElementById("map-panel");
+  return panel ? !panel.hidden : false;
+}
+
+// (Re)builds the map SVG from the current index/outline/user-location — called whenever any
+// of those change while the map view is on screen (view switch, geolocation, or a fresh
+// loadIndex() on init).
+function renderMapView() {
+  const container = document.getElementById("map-svg-container");
+  if (!container) return;
+  const { gauges, beachModel } = mapMarkerSources(index);
+  renderMap(container, {
+    outline,
+    gauges,
+    beachModel,
+    userLocation: currentUserLocation,
+    onSelect: (entry) => {
+      const distanceKm = currentUserLocation
+        ? haversineKm(currentUserLocation, { lat: entry.latitude, lon: entry.longitude })
+        : null;
+      showStation(entry, distanceKm).catch(() => {
+        renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+      });
+    },
+    onHover: (entry, label) => {
+      const hint = document.getElementById("map-hint");
+      if (hint) hint.textContent = `${entry.name} (${label})`;
+    },
+  });
+}
+
+function getStoredView() {
+  const v = localStorage.getItem(LS_VIEW_KEY);
+  return VALID_VIEWS.includes(v) ? v : DEFAULT_VIEW;
+}
+
+// Switches between the original search/country "list" panel and the map panel, persisting
+// the choice (Task 19 spec: "Persist last view in localStorage. Default to list."). Renders
+// the map lazily — only when the view actually switches to "map" — rather than on every
+// index/geolocation change, since building the SVG from scratch is cheap but pointless work
+// while the panel is hidden.
+function setView(view) {
+  localStorage.setItem(LS_VIEW_KEY, view);
+  const listPanel = document.getElementById("list-panel");
+  const mapPanel = document.getElementById("map-panel");
+  if (listPanel) listPanel.hidden = view !== "list";
+  if (mapPanel) mapPanel.hidden = view !== "map";
+  for (const button of document.querySelectorAll("#view-toggle .view-toggle-btn")) {
+    const active = button.dataset.view === view;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  if (view === "map") renderMapView();
+}
+
+function wireViewToggle() {
+  const toggle = document.getElementById("view-toggle");
+  if (!toggle) return;
+  for (const button of toggle.querySelectorAll(".view-toggle-btn")) {
+    button.addEventListener("click", () => setView(button.dataset.view));
+  }
+  setView(getStoredView());
+}
+
 export async function init() {
   initThemeToggle();
   await loadIndex();
   wireSearch();
   wireCountryFilter();
   wireDayCount();
+  wireViewToggle();
   document.getElementById("use-location").addEventListener("click", useMyLocation);
 
   const savedId = localStorage.getItem(LS_KEY);
