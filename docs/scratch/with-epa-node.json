@@ -1,0 +1,613 @@
+[
+  {
+    "beach": "Tragumna",
+    "lat": 51.50148784,
+    "lon": -9.2658542,
+    "station": "Castletownbere",
+    "stationId": "ticon/castletownbere-835-irl-uhslc_fd",
+    "stationSource": "ticon",
+    "distanceKm": 6.719052006462509,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:05:04.975Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:07:53.246Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:24:03.201Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T23:32:08.734Z"
+      }
+    ],
+    "epaNode": "IESWBWC010_0000_0100_MODELLED",
+    "epaLat": 51.48892,
+    "epaLon": -9.253851,
+    "epaDistKm": 1.6258646815758282
+  },
+  {
+    "beach": "Garretstown",
+    "lat": 51.64231301,
+    "lon": -8.57947894,
+    "station": "Kinsale",
+    "stationId": "Kinsale",
+    "stationSource": "mi",
+    "distanceKm": 10.012586883549872,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:25:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:50:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:50:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC090_0000_0200_MODELLED",
+    "epaLat": 51.63101,
+    "epaLon": -8.591008,
+    "epaDistKm": 1.4875152807190313
+  },
+  {
+    "beach": "Garrylucas, White Strand",
+    "lat": 51.6401061,
+    "lon": -8.56945502,
+    "station": "Kinsale",
+    "stationId": "Kinsale",
+    "stationSource": "mi",
+    "distanceKm": 9.486468368559672,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:25:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:50:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:50:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC090_0000_0200_MODELLED",
+    "epaLat": 51.63101,
+    "epaLon": -8.591008,
+    "epaDistKm": 1.7987677498595696
+  },
+  {
+    "beach": "Inchydoney",
+    "lat": 51.59492632,
+    "lon": -8.86380766,
+    "station": "Union Hall",
+    "stationId": "Union_Hall",
+    "stationSource": "mi",
+    "distanceKm": 19.06001874041819,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:45:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:45:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC100_0000_0100_MODELLED",
+    "epaLat": 51.58908,
+    "epaLon": -8.85168,
+    "epaDistKm": 1.0604205690576516
+  },
+  {
+    "beach": "Warren, Cregane Strand",
+    "lat": 51.56485349,
+    "lon": -9.01324746,
+    "station": "Union Hall",
+    "stationId": "Union_Hall",
+    "stationSource": "mi",
+    "distanceKm": 8.338063968761414,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:45:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:45:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC110_0000_0100_MODELLED",
+    "epaLat": 51.55234,
+    "epaLon": -9.006891,
+    "epaDistKm": 1.459176341729576
+  },
+  {
+    "beach": "Owenahincha, Little Island Strand",
+    "lat": 51.56342994,
+    "lon": -8.99260847,
+    "station": "Union Hall",
+    "stationId": "Union_Hall",
+    "stationSource": "mi",
+    "distanceKm": 9.751920082342291,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:45:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:45:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC110_0000_0200_MODELLED",
+    "epaLat": 51.55581,
+    "epaLon": -8.976766,
+    "epaDistKm": 1.3846847577978132
+  },
+  {
+    "beach": "Barley Cove",
+    "lat": 51.46648349,
+    "lon": -9.7767984,
+    "station": "Castletownbere",
+    "stationId": "Castletownbere",
+    "stationSource": "mi",
+    "distanceKm": 22.162974972175906,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:00:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:00:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T23:30:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC150_0000_0200_MODELLED",
+    "epaLat": 51.45523,
+    "epaLon": -9.77023,
+    "epaDistKm": 1.3315055966622615
+  },
+  {
+    "beach": "Inchydoney East Beach",
+    "lat": 51.59765618,
+    "lon": -8.85924134,
+    "station": "Union Hall",
+    "stationId": "Union_Hall",
+    "stationSource": "mi",
+    "distanceKm": 19.432992822210263,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:45:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:45:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC100_0000_0100_MODELLED",
+    "epaLat": 51.58908,
+    "epaLon": -8.85168,
+    "epaDistKm": 1.087304379009605
+  },
+  {
+    "beach": "Culdaff",
+    "lat": 55.29397034,
+    "lon": -7.14634417,
+    "station": "Malin Head",
+    "stationId": "Malin_Head",
+    "stationSource": "mi",
+    "distanceKm": 14.697570169217947,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T00:40:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T06:40:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:40:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T19:00:00.000Z"
+      }
+    ],
+    "epaNode": "IENWBWC230_0000_0200_MODELLED",
+    "epaLat": 55.30617,
+    "epaLon": -7.132051,
+    "epaDistKm": 1.6305860348324652
+  },
+  {
+    "beach": "Rathmullan",
+    "lat": 55.09663284,
+    "lon": -7.52973262,
+    "station": "Buncranna",
+    "stationId": "Buncranna",
+    "stationSource": "mi",
+    "distanceKm": 5.341138113427785,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T00:25:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T06:40:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:25:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T18:55:00.000Z"
+      }
+    ],
+    "epaNode": "IENWBWC220_0000_0200_MODELLED",
+    "epaLat": 55.10787,
+    "epaLon": -7.520215,
+    "epaDistKm": 1.3884837716953151
+  },
+  {
+    "beach": "Downings",
+    "lat": 55.1929026,
+    "lon": -7.84176247,
+    "station": "Tory Island",
+    "stationId": "Tory_Island",
+    "stationSource": "mi",
+    "distanceKm": 23.38406520712271,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T00:20:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T06:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:25:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T18:45:00.000Z"
+      }
+    ],
+    "epaNode": "IENWBWC190_0000_0100_MODELLED",
+    "epaLat": 55.18533,
+    "epaLon": -7.850629,
+    "epaDistKm": 1.0128166437117667
+  },
+  {
+    "beach": "Portmarnock, Velvet Strand Beach",
+    "lat": 53.43280741,
+    "lon": -6.12189851,
+    "station": "Howth",
+    "stationId": "Howth",
+    "stationSource": "mi",
+    "distanceKm": 5.808385376880844,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T05:20:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T12:00:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T17:35:00.000Z"
+      }
+    ],
+    "epaNode": "IEEABWC070_0000_0200_MODELLED",
+    "epaLat": 53.43811,
+    "epaLon": -6.111032,
+    "epaDistKm": 0.9304793042774062
+  },
+  {
+    "beach": "Brittas Bay South",
+    "lat": 52.87759105,
+    "lon": -6.06017128,
+    "station": "Arklow",
+    "stationId": "Arklow",
+    "stationSource": "mi",
+    "distanceKm": 11.09627679674757,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T04:15:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T08:35:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T16:20:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T20:50:00.000Z"
+      }
+    ],
+    "epaNode": "IEEABWC140_0000_0200_MODELLED",
+    "epaLat": 52.86791,
+    "epaLon": -6.053907,
+    "epaDistKm": 1.155673157163165
+  },
+  {
+    "beach": "Rosslare Strand",
+    "lat": 52.27331413,
+    "lon": -6.38534037,
+    "station": "Rosslare",
+    "stationId": "Rosslare",
+    "stationSource": "mi",
+    "distanceKm": 4.016424856085697,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T00:35:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T07:00:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:25:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T19:25:00.000Z"
+      }
+    ],
+    "epaNode": "IESEBWC010_0000_0100_MODELLED",
+    "epaLat": 52.28162,
+    "epaLon": -6.370083,
+    "epaDistKm": 1.3894048331075879
+  },
+  {
+    "beach": "Lahinch",
+    "lat": 52.93345673,
+    "lon": -9.34974537,
+    "station": "Lahinch",
+    "stationId": "Lahinch",
+    "stationSource": "mi",
+    "distanceKm": 3.6717709939378085,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:30:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:30:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:45:00.000Z"
+      }
+    ],
+    "epaNode": "IESHBWC100_0000_0100_MODELLED",
+    "epaLat": 52.93394,
+    "epaLon": -9.353781,
+    "epaDistKm": 0.27576048445676626
+  },
+  {
+    "beach": "Salthill Beach",
+    "lat": 53.2545058,
+    "lon": -9.09222197,
+    "station": "Galway",
+    "stationId": "Galway",
+    "stationSource": "mi",
+    "distanceKm": 3.3535936979468786,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:30:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:20:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:45:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T23:55:00.000Z"
+      }
+    ],
+    "epaNode": "IEWEBWC170_0000_0200_MODELLED",
+    "epaLat": 53.25217,
+    "epaLon": -9.082625,
+    "epaDistKm": 0.6892521967277542
+  },
+  {
+    "beach": "Keel Beach, Achill Island",
+    "lat": 53.97184428,
+    "lon": -10.07698924,
+    "station": "Achill Island",
+    "stationId": "Achill_Island",
+    "stationSource": "mi",
+    "distanceKm": 2.7135667941425834,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T06:10:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:05:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T18:20:00.000Z"
+      }
+    ],
+    "epaNode": "IEWEBWC250_0000_0200_MODELLED",
+    "epaLat": 53.96301,
+    "epaLon": -10.0841,
+    "epaDistKm": 1.0868751003988446
+  },
+  {
+    "beach": "Rossnowlagh",
+    "lat": 54.55359721,
+    "lon": -8.21526026,
+    "station": "Killybegs",
+    "stationId": "Killybegs",
+    "stationSource": "mi",
+    "distanceKm": 14.788434635648878,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T00:05:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T06:20:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:05:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T18:35:00.000Z"
+      }
+    ],
+    "epaNode": "IENWBWC010_0000_0200_MODELLED",
+    "epaLat": 54.55818,
+    "epaLon": -8.225649,
+    "epaDistKm": 0.8416860735276382
+  },
+  {
+    "beach": "Tramore Beach",
+    "lat": 52.15822602,
+    "lon": -7.1444711,
+    "station": "Dunmore",
+    "stationId": "Dunmore",
+    "stationSource": "mi",
+    "distanceKm": 10.492936538577856,
+    "tides": [
+      {
+        "type": "low",
+        "iso": "2026-07-15T00:00:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T06:05:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:20:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T18:30:00.000Z"
+      }
+    ],
+    "epaNode": "IESEBWC110_0000_0100_MODELLED",
+    "epaLat": 52.15565,
+    "epaLon": -7.141426,
+    "epaDistKm": 0.35383655418335286
+  },
+  {
+    "beach": "Youghal Front Strand Beach",
+    "lat": 51.93835493,
+    "lon": -7.84732691,
+    "station": "Ballycotton",
+    "stationId": "Ballycotton",
+    "stationSource": "mi",
+    "distanceKm": 16.187964739730084,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:45:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T12:15:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T18:10:00.000Z"
+      }
+    ],
+    "epaNode": "IESWBWC020_0000_0200_MODELLED",
+    "epaLat": 51.93379,
+    "epaLon": -7.856441,
+    "epaDistKm": 0.8050239160384389
+  },
+  {
+    "beach": "Ballybunnion North",
+    "lat": 52.5134818,
+    "lon": -9.67944749,
+    "station": "Carrigaholt",
+    "stationId": "Carrigaholt",
+    "stationSource": "mi",
+    "distanceKm": 9.231962969804702,
+    "tides": [
+      {
+        "type": "high",
+        "iso": "2026-07-15T05:25:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T11:25:00.000Z"
+      },
+      {
+        "type": "high",
+        "iso": "2026-07-15T17:35:00.000Z"
+      },
+      {
+        "type": "low",
+        "iso": "2026-07-15T23:55:00.000Z"
+      }
+    ],
+    "epaNode": "IESHBWC060_0000_0200_MODELLED",
+    "epaLat": 52.50666,
+    "epaLon": -9.677233,
+    "epaDistKm": 0.7732125000096216
+  }
+]

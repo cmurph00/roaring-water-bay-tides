@@ -1,6 +1,12 @@
 # OS
 .DS_Store
 
+# UKHO/Admiralty-derived tide reference values — VALIDATION + source-selection
+# only, never published (Crown Copyright; this repo is public + monetization-intended).
+# Task 22's accuracy regression reads the fixture locally and skips when it's absent.
+test/fixtures/reference-tides.json
+docs/PROJECT-STATUS.md
+
 # Node
 node_modules/
 

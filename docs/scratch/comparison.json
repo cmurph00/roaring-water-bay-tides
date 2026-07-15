@@ -1,0 +1,656 @@
+[
+  {
+    "beach": "Tragumna",
+    "station": "Castletownbere",
+    "source": "ticon",
+    "distanceKm": 6.719052006462509,
+    "epaNode": "IESWBWC010_0000_0100_MODELLED",
+    "epaDistKm": 1.6258646815758282,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:05:04.975000+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": -14.917083333333332
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:07:53.246000+00:00",
+        "epa": "2026-07-15T11:30:00+00:00",
+        "deltaMin": -22.112566666666666
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:24:03.201000+00:00",
+        "epa": "2026-07-15T17:40:00+00:00",
+        "deltaMin": -15.94665
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T23:32:08.734000+00:00",
+        "epa": "2026-07-16T00:00:00+00:00",
+        "deltaMin": -27.854433333333336
+      }
+    ]
+  },
+  {
+    "beach": "Garretstown",
+    "station": "Kinsale",
+    "source": "mi",
+    "distanceKm": 10.012586883549872,
+    "epaNode": "IESWBWC090_0000_0200_MODELLED",
+    "epaDistKm": 1.4875152807190313,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:25:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:50:00+00:00",
+        "epa": "2026-07-15T11:50:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:50:00+00:00",
+        "epa": "2026-07-15T17:50:00+00:00",
+        "deltaMin": 0.0
+      }
+    ]
+  },
+  {
+    "beach": "Garrylucas, White Strand",
+    "station": "Kinsale",
+    "source": "mi",
+    "distanceKm": 9.486468368559672,
+    "epaNode": "IESWBWC090_0000_0200_MODELLED",
+    "epaDistKm": 1.7987677498595696,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:25:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:50:00+00:00",
+        "epa": "2026-07-15T11:50:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:50:00+00:00",
+        "epa": "2026-07-15T17:50:00+00:00",
+        "deltaMin": 0.0
+      }
+    ]
+  },
+  {
+    "beach": "Inchydoney",
+    "station": "Union Hall",
+    "source": "mi",
+    "distanceKm": 19.06001874041819,
+    "epaNode": "IESWBWC100_0000_0100_MODELLED",
+    "epaDistKm": 1.0604205690576516,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:20:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:45:00+00:00",
+        "epa": "2026-07-15T11:40:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:45:00+00:00",
+        "epa": "2026-07-15T17:50:00+00:00",
+        "deltaMin": -5.0
+      }
+    ]
+  },
+  {
+    "beach": "Warren, Cregane Strand",
+    "station": "Union Hall",
+    "source": "mi",
+    "distanceKm": 8.338063968761414,
+    "epaNode": "IESWBWC110_0000_0100_MODELLED",
+    "epaDistKm": 1.459176341729576,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:20:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:45:00+00:00",
+        "epa": "2026-07-15T11:40:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:45:00+00:00",
+        "epa": "2026-07-15T17:40:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  },
+  {
+    "beach": "Owenahincha, Little Island Strand",
+    "station": "Union Hall",
+    "source": "mi",
+    "distanceKm": 9.751920082342291,
+    "epaNode": "IESWBWC110_0000_0200_MODELLED",
+    "epaDistKm": 1.3846847577978132,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:20:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:45:00+00:00",
+        "epa": "2026-07-15T11:40:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:45:00+00:00",
+        "epa": "2026-07-15T17:40:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  },
+  {
+    "beach": "Barley Cove",
+    "station": "Castletownbere",
+    "source": "mi",
+    "distanceKm": 22.162974972175906,
+    "epaNode": "IESWBWC150_0000_0200_MODELLED",
+    "epaDistKm": 1.3315055966622615,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:00:00+00:00",
+        "epa": "2026-07-15T05:10:00+00:00",
+        "deltaMin": -10.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:00:00+00:00",
+        "epa": "2026-07-15T11:10:00+00:00",
+        "deltaMin": -10.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:20:00+00:00",
+        "epa": "2026-07-15T17:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T23:30:00+00:00",
+        "epa": "2026-07-15T23:30:00+00:00",
+        "deltaMin": 0.0
+      }
+    ]
+  },
+  {
+    "beach": "Inchydoney East Beach",
+    "station": "Union Hall",
+    "source": "mi",
+    "distanceKm": 19.432992822210263,
+    "epaNode": "IESWBWC100_0000_0100_MODELLED",
+    "epaDistKm": 1.087304379009605,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:20:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:45:00+00:00",
+        "epa": "2026-07-15T11:40:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:45:00+00:00",
+        "epa": "2026-07-15T17:50:00+00:00",
+        "deltaMin": -5.0
+      }
+    ]
+  },
+  {
+    "beach": "Culdaff",
+    "station": "Malin Head",
+    "source": "mi",
+    "distanceKm": 14.697570169217947,
+    "epaNode": "IENWBWC230_0000_0200_MODELLED",
+    "epaDistKm": 1.6305860348324652,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T00:40:00+00:00",
+        "epa": "2026-07-15T00:50:00+00:00",
+        "deltaMin": -10.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T06:40:00+00:00",
+        "epa": "2026-07-15T06:50:00+00:00",
+        "deltaMin": -10.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:40:00+00:00",
+        "epa": "2026-07-15T12:50:00+00:00",
+        "deltaMin": -10.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T19:00:00+00:00",
+        "epa": "2026-07-15T19:20:00+00:00",
+        "deltaMin": -20.0
+      }
+    ]
+  },
+  {
+    "beach": "Rathmullan",
+    "station": "Buncranna",
+    "source": "mi",
+    "distanceKm": 5.341138113427785,
+    "epaNode": "IENWBWC220_0000_0200_MODELLED",
+    "epaDistKm": 1.3884837716953151,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T00:25:00+00:00",
+        "epa": "2026-07-15T00:30:00+00:00",
+        "deltaMin": -5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T06:40:00+00:00",
+        "epa": "2026-07-15T06:30:00+00:00",
+        "deltaMin": 10.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:25:00+00:00",
+        "epa": "2026-07-15T12:40:00+00:00",
+        "deltaMin": -15.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T18:55:00+00:00",
+        "epa": "2026-07-15T18:50:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  },
+  {
+    "beach": "Downings",
+    "station": "Tory Island",
+    "source": "mi",
+    "distanceKm": 23.38406520712271,
+    "epaNode": "IENWBWC190_0000_0100_MODELLED",
+    "epaDistKm": 1.0128166437117667,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T00:20:00+00:00",
+        "epa": "2026-07-15T00:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T06:20:00+00:00",
+        "epa": "2026-07-15T06:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:25:00+00:00",
+        "epa": "2026-07-15T12:20:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T18:45:00+00:00",
+        "epa": "2026-07-15T18:40:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  },
+  {
+    "beach": "Portmarnock, Velvet Strand Beach",
+    "station": "Howth",
+    "source": "mi",
+    "distanceKm": 5.808385376880844,
+    "epaNode": "IEEABWC070_0000_0200_MODELLED",
+    "epaDistKm": 0.9304793042774062,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T05:20:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T12:00:00+00:00",
+        "epa": "2026-07-15T11:50:00+00:00",
+        "deltaMin": 10.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T17:35:00+00:00",
+        "epa": "2026-07-15T17:30:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  },
+  {
+    "beach": "Brittas Bay South",
+    "station": "Arklow",
+    "source": "mi",
+    "distanceKm": 11.09627679674757,
+    "epaNode": "IEEABWC140_0000_0200_MODELLED",
+    "epaDistKm": 1.155673157163165,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T04:15:00+00:00",
+        "epa": "2026-07-15T05:00:00+00:00",
+        "deltaMin": -45.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T08:35:00+00:00",
+        "epa": "2026-07-15T11:50:00+00:00",
+        "deltaMin": -195.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T16:20:00+00:00",
+        "epa": "2026-07-15T16:50:00+00:00",
+        "deltaMin": -30.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T20:50:00+00:00",
+        "epa": "2026-07-15T23:40:00+00:00",
+        "deltaMin": -170.0
+      }
+    ]
+  },
+  {
+    "beach": "Rosslare Strand",
+    "station": "Rosslare",
+    "source": "mi",
+    "distanceKm": 4.016424856085697,
+    "epaNode": "IESEBWC010_0000_0100_MODELLED",
+    "epaDistKm": 1.3894048331075879,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T00:35:00+00:00",
+        "epa": "2026-07-15T00:20:00+00:00",
+        "deltaMin": 15.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T07:00:00+00:00",
+        "epa": "2026-07-15T06:30:00+00:00",
+        "deltaMin": 30.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:25:00+00:00",
+        "epa": "2026-07-15T12:10:00+00:00",
+        "deltaMin": 15.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T19:25:00+00:00",
+        "epa": "2026-07-15T19:00:00+00:00",
+        "deltaMin": 25.0
+      }
+    ]
+  },
+  {
+    "beach": "Lahinch",
+    "station": "Lahinch",
+    "source": "mi",
+    "distanceKm": 3.6717709939378085,
+    "epaNode": "IESHBWC100_0000_0100_MODELLED",
+    "epaDistKm": 0.27576048445676626,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:30:00+00:00",
+        "epa": "2026-07-15T05:30:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:30:00+00:00",
+        "epa": "2026-07-15T11:30:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:45:00+00:00",
+        "epa": "2026-07-15T17:40:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  },
+  {
+    "beach": "Salthill Beach",
+    "station": "Galway",
+    "source": "mi",
+    "distanceKm": 3.3535936979468786,
+    "epaNode": "IEWEBWC170_0000_0200_MODELLED",
+    "epaDistKm": 0.6892521967277542,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:30:00+00:00",
+        "epa": "2026-07-15T05:30:00+00:00",
+        "deltaMin": 0.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:20:00+00:00",
+        "epa": "2026-07-15T11:30:00+00:00",
+        "deltaMin": -10.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:45:00+00:00",
+        "epa": "2026-07-15T17:50:00+00:00",
+        "deltaMin": -5.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T23:55:00+00:00",
+        "epa": "2026-07-16T00:00:00+00:00",
+        "deltaMin": -5.0
+      }
+    ]
+  },
+  {
+    "beach": "Keel Beach, Achill Island",
+    "station": "Achill Island",
+    "source": "mi",
+    "distanceKm": 2.7135667941425834,
+    "epaNode": "IEWEBWC250_0000_0200_MODELLED",
+    "epaDistKm": 1.0868751003988446,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T06:10:00+00:00",
+        "epa": "2026-07-15T06:00:00+00:00",
+        "deltaMin": 10.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:05:00+00:00",
+        "epa": "2026-07-15T12:00:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T18:20:00+00:00",
+        "epa": "2026-07-15T18:10:00+00:00",
+        "deltaMin": 10.0
+      }
+    ]
+  },
+  {
+    "beach": "Rossnowlagh",
+    "station": "Killybegs",
+    "source": "mi",
+    "distanceKm": 14.788434635648878,
+    "epaNode": "IENWBWC010_0000_0200_MODELLED",
+    "epaDistKm": 0.8416860735276382,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T00:05:00+00:00",
+        "epa": "2026-07-15T00:00:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T06:20:00+00:00",
+        "epa": "2026-07-15T06:00:00+00:00",
+        "deltaMin": 20.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:05:00+00:00",
+        "epa": "2026-07-15T12:00:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T18:35:00+00:00",
+        "epa": "2026-07-15T18:20:00+00:00",
+        "deltaMin": 15.0
+      }
+    ]
+  },
+  {
+    "beach": "Tramore Beach",
+    "station": "Dunmore",
+    "source": "mi",
+    "distanceKm": 10.492936538577856,
+    "epaNode": "IESEBWC110_0000_0100_MODELLED",
+    "epaDistKm": 0.35383655418335286,
+    "matches": [
+      {
+        "type": "low",
+        "app": "2026-07-15T00:00:00+00:00",
+        "epa": "2026-07-14T23:40:00+00:00",
+        "deltaMin": 20.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T06:05:00+00:00",
+        "epa": "2026-07-15T05:40:00+00:00",
+        "deltaMin": 25.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:20:00+00:00",
+        "epa": "2026-07-15T12:00:00+00:00",
+        "deltaMin": 20.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T18:30:00+00:00",
+        "epa": "2026-07-15T18:10:00+00:00",
+        "deltaMin": 20.0
+      }
+    ]
+  },
+  {
+    "beach": "Youghal Front Strand Beach",
+    "station": "Ballycotton",
+    "source": "mi",
+    "distanceKm": 16.187964739730084,
+    "epaNode": "IESWBWC020_0000_0200_MODELLED",
+    "epaDistKm": 0.8050239160384389,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:45:00+00:00",
+        "epa": "2026-07-15T05:30:00+00:00",
+        "deltaMin": 15.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T12:15:00+00:00",
+        "epa": "2026-07-15T12:00:00+00:00",
+        "deltaMin": 15.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T18:10:00+00:00",
+        "epa": "2026-07-15T18:00:00+00:00",
+        "deltaMin": 10.0
+      }
+    ]
+  },
+  {
+    "beach": "Ballybunnion North",
+    "station": "Carrigaholt",
+    "source": "mi",
+    "distanceKm": 9.231962969804702,
+    "epaNode": "IESHBWC060_0000_0200_MODELLED",
+    "epaDistKm": 0.7732125000096216,
+    "matches": [
+      {
+        "type": "high",
+        "app": "2026-07-15T05:25:00+00:00",
+        "epa": "2026-07-15T05:20:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T11:25:00+00:00",
+        "epa": "2026-07-15T11:20:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "high",
+        "app": "2026-07-15T17:35:00+00:00",
+        "epa": "2026-07-15T17:30:00+00:00",
+        "deltaMin": 5.0
+      },
+      {
+        "type": "low",
+        "app": "2026-07-15T23:55:00+00:00",
+        "epa": "2026-07-15T23:50:00+00:00",
+        "deltaMin": 5.0
+      }
+    ]
+  }
+]
