@@ -16,6 +16,7 @@ const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
 const EPA_INDEX_URL = "./data/epa-stations.json";
 const BEACHES_URL = "./data/beaches.json";
+const NAMED_SPOTS_URL = "./data/named-spots.json";
 const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local entry are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
@@ -35,6 +36,18 @@ const MAX_RESULTS = 50;
 // every EPA entry; every MI entry that isn't within MI_OVERLAP_KM of an EPA entry; and every
 // TICON entry that isn't within MI_OVERLAP_KM of an EPA or (kept) MI entry — this avoids
 // showing near-duplicate entries for the same physical location.
+//
+// Dedup rule chosen (Task 21): since scripts/build-epa.mjs's labelNodeFromRegister now drops
+// every offshore EPA node at build time, EVERY entry `epa` contains here is, by construction,
+// "at-beach" — sited within 2km of a named register beach. That makes the EPA-first tier
+// order equivalent to "prefer the closest, at-beach-wins-ties" for every overlap actually
+// present in this dataset: e.g. the Garryvoe EPA beach-model node (1.42km from Garryvoe
+// beach) sits 2.36km from the MI "Ballycotton" gauge — the EPA entry is both the closer
+// physical match AND the one plausibly nearer the shared bathing location, so keeping the
+// simple tier rule (rather than a generic pairwise-distance dedup) already realizes the
+// intended behaviour without extra complexity. If a future EPA node ever landed genuinely
+// farther from an overlap than its MI/TICON counterpart, this rule would need revisiting —
+// not observed in the current West Cork bbox.
 export function mergeStationIndexes(ticon, mi, epa = []) {
   const near = (a, b) => haversineKm({ lat: a.latitude, lon: a.longitude }, { lat: b.latitude, lon: b.longitude }) <= MI_OVERLAP_KM;
 
@@ -48,6 +61,12 @@ let index = [];
 // their nearest real station in `index` at click-time. Never shown in the country
 // dropdown or the geolocation "use my location" flow, only in free-text search results.
 let beaches = [];
+// Named town/village spots (Baltimore/Schull/Crookhaven/Cape Clear, data/named-spots.json)
+// — same search-only-alias contract as `beaches` above (same {name, latitude, longitude}
+// shape, reused via searchBeaches), but for places users search for that aren't themselves
+// on the EPA bathing-water register. Resolve via nearestStation over the merged prediction
+// `index`, same as beaches — see wireSearch/renderStationList below.
+let namedSpots = [];
 // The currently-selected station (entry + distance + optional resolved-from locality
 // name), kept so the day-count control can re-render without re-running
 // search/geolocation/selection.
@@ -82,6 +101,14 @@ async function loadIndex() {
     beaches = res.ok ? await res.json() : [];
   } catch {
     beaches = [];
+  }
+
+  // Named town/village spots — same optional-enhancement contract as beaches above.
+  try {
+    const res = await fetch(NAMED_SPOTS_URL);
+    namedSpots = res.ok ? await res.json() : [];
+  } catch {
+    namedSpots = [];
   }
 }
 
@@ -145,19 +172,30 @@ function geolocationErrorMessage(err) {
   }
 }
 
-// `locality` is set only when the current selection was reached via a beach search
-// alias (see renderStationList's beach click handler) — it names the searched-for
-// beach, distinct from `entry`, the real station its tides actually come from.
+// Source transparency (Task 21): the prediction's underlying data source is never hidden
+// behind a generic "gauge" label — MI/TICON are real tide gauges (or a harmonic model of
+// one); EPA stations are the beach's own hydrodynamic model node (scripts/build-epa.mjs),
+// not a gauge at all. Exported for unit testing alongside mergeStationIndexes above.
+export function stationSourceLabel(station) {
+  return station.source === "epa" ? "beach model" : "tide gauge";
+}
+
+// `locality` is set only when the current selection was reached via a beach/named-spot
+// search alias (see renderStationList's click handlers) — it names the searched-for
+// place, distinct from `entry`, the real station its tides actually come from. Shows the
+// resolved station's source + type + distance so it's always clear which data underlies
+// the numbers, e.g. "Baltimore → Tragumna (beach model, 8 km) · heights vs Model MSL" or
+// "Baltimore → Union Hall (tide gauge, 19 km) · heights vs OD Malin".
 function renderHeader(entry, distanceKm, station, locality) {
   const el = document.getElementById("station-header");
   const datum = `heights vs ${station.chart_datum ?? "chart datum"}`;
-  if (locality) {
-    const dist = distanceKm != null ? `, ${fmtDistance(distanceKm)}` : "";
-    el.textContent = `${locality} → nearest gauge: ${entry.name}${dist} · ${datum}`;
+  const type = stationSourceLabel(station);
+  const dist = distanceKm != null ? `, ${fmtDistance(distanceKm)}` : "";
+  if (locality && locality !== entry.name) {
+    el.textContent = `${locality} → ${entry.name} (${type}${dist}) · ${datum}`;
     return;
   }
-  const dist = distanceKm != null ? ` · nearest gauge ${fmtDistance(distanceKm)} away` : "";
-  el.textContent = `${entry.name}, ${entry.country}${dist} · ${datum}`;
+  el.textContent = `${entry.name}, ${entry.country} (${type}${dist}) · ${datum}`;
 }
 
 function renderTideTable(tides, timezone) {
@@ -204,7 +242,25 @@ function closeSearchDropdown() {
   if (input) input.value = "";
 }
 
-function renderStationList(stations, beachResults = []) {
+// Shared click behaviour for any "search-only alias" result (a beach or a named
+// town/village spot): resolve to the nearest real prediction station in the merged
+// `index`, then show that station with the alias's own name threaded through as
+// `locality` (see renderHeader) — never a station in its own right.
+function wireLocalityClick(li, item, notFoundMessage) {
+  li.addEventListener("click", () => {
+    closeSearchDropdown();
+    const nearest = nearestStation(item.latitude, item.longitude, index);
+    if (!nearest) {
+      renderError(notFoundMessage);
+      return;
+    }
+    showStation(nearest.station, nearest.distanceKm, item.name).catch(() => {
+      renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
+    });
+  });
+}
+
+function renderStationList(stations, beachResults = [], namedSpotResults = []) {
   const list = document.getElementById("search-results");
   list.innerHTML = "";
   for (const m of stations.slice(0, MAX_RESULTS)) {
@@ -221,20 +277,13 @@ function renderStationList(stations, beachResults = []) {
   for (const b of beachResults.slice(0, MAX_RESULTS)) {
     const li = document.createElement("li");
     li.textContent = `🏖 ${b.name}, ${b.country}`;
-    li.addEventListener("click", () => {
-      closeSearchDropdown();
-      // Beaches are search-only aliases: resolve to the nearest real prediction
-      // station in the merged index, then show that station with the beach's
-      // own name threaded through as `locality` (see renderHeader).
-      const nearest = nearestStation(b.latitude, b.longitude, index);
-      if (!nearest) {
-        renderError("Couldn't find a nearby tide gauge for this beach.");
-        return;
-      }
-      showStation(nearest.station, nearest.distanceKm, b.name).catch(() => {
-        renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
-      });
-    });
+    wireLocalityClick(li, b, "Couldn't find a nearby tide gauge for this beach.");
+    list.appendChild(li);
+  }
+  for (const s of namedSpotResults.slice(0, MAX_RESULTS)) {
+    const li = document.createElement("li");
+    li.textContent = `📍 ${s.name}`;
+    wireLocalityClick(li, s, "Couldn't find a nearby tide gauge for this spot.");
     list.appendChild(li);
   }
 }
@@ -272,10 +321,13 @@ function wireSearch() {
   const input = document.getElementById("station-search");
   input.addEventListener("input", () => {
     const stationResults = searchStations(input.value, searchScope());
-    // Beaches are a global search-only alias layer — not scoped by #country-filter
-    // (spec: don't add beaches to the country dropdown or its scoping).
+    // Beaches and named spots are both global search-only alias layers — not scoped
+    // by #country-filter (spec: don't add them to the country dropdown or its
+    // scoping). Named spots share the exact same {name, latitude, longitude} search
+    // contract as beaches, so searchBeaches (name-substring match) is reused as-is.
     const beachResults = searchBeaches(input.value, beaches);
-    renderStationList(stationResults, beachResults);
+    const namedSpotResults = searchBeaches(input.value, namedSpots);
+    renderStationList(stationResults, beachResults, namedSpotResults);
   });
 }
 

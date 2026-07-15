@@ -2,13 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   BBOX,
-  NAMED_SPOTS,
+  BEACH_NAME_RADIUS_KM,
   inBbox,
   parseNodeListCsv,
   parseSeriesCsv,
+  parabolicPeak,
   extractExtrema,
-  assignNamedSpots,
-  resolveNodeName,
+  labelNodeFromRegister,
 } from "../scripts/build-epa.mjs";
 
 // --- inBbox ---------------------------------------------------------------
@@ -21,10 +21,8 @@ test("inBbox rejects a point outside the box", () => {
   assert.equal(inBbox(53.34, -6.22), false); // Dublin
 });
 
-test("BBOX/NAMED_SPOTS are sane (West Cork)", () => {
+test("BBOX is sane (West Cork)", () => {
   assert.ok(BBOX.minLat < BBOX.maxLat && BBOX.minLon < BBOX.maxLon);
-  assert.equal(NAMED_SPOTS.length, 4);
-  for (const spot of NAMED_SPOTS) assert.ok(inBbox(spot.latitude, spot.longitude));
 });
 
 // --- parseNodeListCsv -------------------------------------------------------
@@ -55,24 +53,50 @@ test("parseSeriesCsv drops rows with a missing or NaN height", () => {
   assert.deepEqual(series, [{ t: Date.UTC(2026, 0, 1, 0, 20), h: 0.5 }]);
 });
 
-// --- extractExtrema ----------------------------------------------------------
+// --- parabolicPeak (Task 21, Part A) -----------------------------------------
 
-// A clean synthetic sine-like series: amplitude 2m, period 72 samples (12h at 10-min
-// sampling), 3 full periods (217 samples, t in ms as plain sample offsets — the algorithm
-// only cares about relative ordering/spacing, not calendar semantics). The two boundary
-// samples (i=0, i=216) sit exactly at a peak/trough but aren't detected as turning points
-// (no interior neighbour on one side) — matching rawTurningPoints' requirement of a
-// neighbour on both sides — so the expected extrema are the 3 interior troughs (i=36,108,180)
-// and 2 interior crests (i=72,144), alternating low/high/low/high/low.
-function sineSeries({ samples, period, amplitude = 2, intervalMs = 600000 }) {
-  const series = [];
-  for (let i = 0; i < samples; i++) {
-    series.push({ t: i * intervalMs, h: amplitude * Math.cos((2 * Math.PI * i) / period) });
-  }
-  return series;
-}
+test("parabolicPeak reconstructs the exact vertex of a true parabola sampled off-grid", () => {
+  // h(t) = 5 - 0.01*(t-23)^2 in minutes — a genuine parabola whose peak (23min) falls
+  // between the 20min and 30min samples, not on either of them. Parabolic interpolation
+  // of 3 samples around a parabola is exact (not approximate), so this recovers the true
+  // vertex to floating-point precision — the strongest possible regression check.
+  const h = (tMin) => 5 - 0.01 * (tMin - 23) ** 2;
+  const prev = { t: 10 * 60000, h: h(10) };
+  const cur = { t: 20 * 60000, h: h(20) }; // the raw-sample "peak" (highest of the 3)
+  const next = { t: 30 * 60000, h: h(30) };
+  const refined = parabolicPeak(prev, cur, next);
+  assert.ok(Math.abs(refined.t - 23 * 60000) < 1e-6, `expected ~23min, got ${refined.t / 60000}min`);
+  assert.ok(Math.abs(refined.h - 5) < 1e-9, `expected height ~5, got ${refined.h}`);
+});
+
+test("parabolicPeak falls back to the raw sample when spacing either side is uneven", () => {
+  const prev = { t: 0, h: 1 };
+  const cur = { t: 15, h: 2 }; // not equidistant from prev/next (dt 15 vs 10)
+  const next = { t: 25, h: 1.5 };
+  assert.deepEqual(parabolicPeak(prev, cur, next), { t: 15, h: 2 });
+});
+
+test("parabolicPeak falls back to the raw sample when the 3 points are collinear (no vertex)", () => {
+  const prev = { t: 0, h: 1 };
+  const cur = { t: 10, h: 2 }; // perfectly linear — not a real extremum, denom would be 0
+  const next = { t: 20, h: 3 };
+  assert.deepEqual(parabolicPeak(prev, cur, next), { t: 10, h: 2 });
+});
+
+// --- extractExtrema: interpolation + plateau handling (Task 21, Part A) ------
 
 test("extractExtrema finds the correct count and position of highs/lows on a clean sine series", () => {
+  // Amplitude 2m, period 72 samples (12h at 10-min sampling), 3 full periods. Each
+  // extremum sits exactly ON a sample here (symmetric cosine), so interpolation should
+  // leave the time/height unchanged (offset 0 by symmetry) — this is the un-shifted
+  // control case, distinct from the off-grid interpolation tests below.
+  function sineSeries({ samples, period, amplitude = 2, intervalMs = 600000 }) {
+    const series = [];
+    for (let i = 0; i < samples; i++) {
+      series.push({ t: i * intervalMs, h: amplitude * Math.cos((2 * Math.PI * i) / period) });
+    }
+    return series;
+  }
   const series = sineSeries({ samples: 217, period: 72 });
   const extrema = extractExtrema(series);
 
@@ -91,80 +115,123 @@ test("extractExtrema finds the correct count and position of highs/lows on a cle
   }
 });
 
-test("extractExtrema ignores a near-flat wobble below the prominence threshold", () => {
+test("extractExtrema interpolates a true peak that falls BETWEEN two 10-min samples", () => {
+  // Same parabola as the parabolicPeak test above, embedded in a realistic 10-min-sampled
+  // series — the true peak (23min) is neither snapped to the 20min sample (old,
+  // pre-interpolation behaviour) nor left exactly on it: it lands strictly between the
+  // 20min and 30min samples, within one sample interval of the raw "highest sample" guess.
+  const h = (tMin) => 5 - 0.01 * (tMin - 23) ** 2;
+  const mins = [0, 10, 20, 30, 40, 50];
+  const series = mins.map((t) => ({ t: t * 60000, h: h(t) }));
+  const extrema = extractExtrema(series, 0);
+
+  assert.equal(extrema.length, 1);
+  const [t, height, type] = extrema[0];
+  assert.equal(type, "high");
+  assert.ok(t > 20 * 60000 && t < 30 * 60000, `expected time strictly between samples, got ${t / 60000}min`);
+  assert.ok(Math.abs(t / 60000 - 23) <= 10, "expected within ~1 sample (10min) of the true 23min peak");
+  assert.ok(Math.abs(height - 5) < 1e-6);
+});
+
+test("extractExtrema resolves a real EPA plateau (Schull, 2026-07-15 evening HW) to the TIME MIDPOINT of the tie, not the first sample", () => {
+  // Actual raw ERDDAP samples for EPA node BPNBF050000200001_MODELLED, 2026-07-15: the
+  // continuous model peaks at 17:30Z=1.61 / 17:40Z=1.61 (tied) / 17:50Z=1.59 (falling) —
+  // before this fix, the extractor reported the FIRST of the tied pair (17:30Z = 18:30
+  // IST), quantizing the true peak by up to a full sample. The true peak is the
+  // continuous-time midpoint of the tie, 17:35Z = 18:35 IST — within ~2min of the
+  // independently-verified real high water (18:37 IST).
+  const series = [
+    { t: Date.UTC(2026, 6, 15, 17, 0), h: 1.54 },
+    { t: Date.UTC(2026, 6, 15, 17, 10), h: 1.58 },
+    { t: Date.UTC(2026, 6, 15, 17, 20), h: 1.6 },
+    { t: Date.UTC(2026, 6, 15, 17, 30), h: 1.61 },
+    { t: Date.UTC(2026, 6, 15, 17, 40), h: 1.61 },
+    { t: Date.UTC(2026, 6, 15, 17, 50), h: 1.59 },
+    { t: Date.UTC(2026, 6, 15, 18, 0), h: 1.57 },
+    { t: Date.UTC(2026, 6, 15, 18, 10), h: 1.53 },
+  ];
+  const extrema = extractExtrema(series, 0);
+  assert.equal(extrema.length, 1);
+  const [t, height, type] = extrema[0];
+  assert.equal(type, "high");
+  assert.equal(t, Date.UTC(2026, 6, 15, 17, 35)); // midpoint of the 17:30/17:40 tie
+  assert.equal(height, 1.61);
+});
+
+test("extractExtrema ignores a near-flat wobble below the prominence threshold (values now parabola-refined off their raw samples)", () => {
   // A clear -2m low -> +2m high tidal swing, with a tiny 0.05m dip-then-bump ("wobble")
   // embedded on the rising slope. The wobble's prominence relative to its immediate
   // turning-point neighbours is ~0.05m, far below the 0.15m default threshold, so both
-  // sides of it must be pruned away, leaving just the one true low and one true high.
+  // sides of it must be pruned away, leaving just the one true low and one true high —
+  // each now refined by parabolic interpolation against its (asymmetric) raw neighbours,
+  // rather than reported at the exact raw-sample time/height.
   const series = [
     { t: 0, h: -1.5 },
-    { t: 1, h: -2.0 }, // true low
+    { t: 1, h: -2.0 }, // true low (raw sample)
     { t: 2, h: -1.0 },
     { t: 3, h: -0.5 },
     { t: 4, h: -0.55 }, // wobble: tiny dip
     { t: 5, h: -0.45 }, // wobble: tiny bump back up
     { t: 6, h: 0.5 },
     { t: 7, h: 1.5 },
-    { t: 8, h: 2.0 }, // true high
+    { t: 8, h: 2.0 }, // true high (raw sample)
     { t: 9, h: 1.0 },
     { t: 10, h: 0.0 },
   ];
   const extrema = extractExtrema(series);
-  assert.deepEqual(extrema, [
-    [1, -2.0, "low"],
-    [8, 2.0, "high"],
-  ]);
+  assert.equal(extrema.length, 2);
+  const [lowT, lowH, lowType] = extrema[0];
+  const [highT, highH, highType] = extrema[1];
+  assert.equal(lowType, "low");
+  assert.equal(highType, "high");
+  // Exact values per the parabolic-vertex formula against asymmetric neighbours
+  // (prev=-1.5/next=-1.0 around the low; prev=1.5/next=1.0 around the high) — refined
+  // off the raw t=1/t=8 samples, not snapped to them.
+  assert.ok(Math.abs(lowT - 0.8333333333333334) < 1e-9);
+  assert.ok(Math.abs(lowH - -2.0208333333333335) < 1e-9);
+  assert.ok(Math.abs(highT - 7.833333333333333) < 1e-9);
+  assert.ok(Math.abs(highH - 2.0208333333333335) < 1e-9);
 });
 
 test("extractExtrema returns [] for a too-short series", () => {
-  assert.deepEqual(extractExtrema([{ t: 0, h: 1 }, { t: 1, h: 2 }]), []);
-});
-
-// --- assignNamedSpots / resolveNodeName --------------------------------------
-
-test("assignNamedSpots maps each named spot to its nearest node only", () => {
-  const nodes = [
-    { id: "n1", latitude: 51.4795, longitude: -9.3821 }, // exactly Baltimore's coords
-    { id: "n2", latitude: 51.9, longitude: -8.0 }, // far away
-  ];
-  const map = assignNamedSpots(nodes, [{ name: "Baltimore", latitude: 51.4795, longitude: -9.3821 }]);
-  assert.equal(map.get("n1"), "Baltimore");
-  assert.equal(map.size, 1);
-});
-
-test("assignNamedSpots gives a contested node to the closer spot only", () => {
-  const nodes = [{ id: "n1", latitude: 51.5, longitude: -9.5 }];
-  const spots = [
-    { name: "Near", latitude: 51.5, longitude: -9.5 },
-    { name: "Far", latitude: 51.6, longitude: -9.6 },
-  ];
-  const map = assignNamedSpots(nodes, spots);
-  assert.deepEqual([...map.values()], ["Near"]);
-});
-
-test("resolveNodeName prefers the explicit named-spot assignment over a nearby beach", () => {
-  const node = { id: "n1", latitude: 51.4795, longitude: -9.3821 };
-  const beaches = [{ name: "Some Beach", latitude: 51.48, longitude: -9.38 }];
-  const namedSpotAssignments = new Map([["n1", "Baltimore"]]);
-  assert.equal(resolveNodeName(node, { namedSpotAssignments, beaches }), "Baltimore");
-});
-
-test("resolveNodeName falls back to the nearest beach within radius, formatted '<Beach> (EPA model)'", () => {
-  const node = { id: "n2", latitude: 51.50148784, longitude: -9.2658542 }; // Tragumna's coords
-  const beaches = [{ name: "Tragumna", latitude: 51.50148784, longitude: -9.2658542 }];
-  assert.equal(resolveNodeName(node, { namedSpotAssignments: new Map(), beaches }), "Tragumna (EPA model)");
-});
-
-test("resolveNodeName ignores a beach farther than the naming radius", () => {
-  const node = { id: "n3", latitude: 51.9, longitude: -8.01 };
-  const beaches = [{ name: "Far Beach", latitude: 51.3, longitude: -10.3 }];
-  assert.equal(resolveNodeName(node, { namedSpotAssignments: new Map(), beaches }), "EPA node n3");
-});
-
-test("resolveNodeName falls back to a generic 'EPA node <short-id>' label with no beaches nearby", () => {
-  const node = { id: "BPNBF050000999999_MODELLED", latitude: 51.9, longitude: -8.01 };
-  assert.equal(
-    resolveNodeName(node, { namedSpotAssignments: new Map(), beaches: [] }),
-    "EPA node BPNBF050000999999"
+  assert.deepEqual(
+    extractExtrema([
+      { t: 0, h: 1 },
+      { t: 1, h: 2 },
+    ]),
+    []
   );
+});
+
+// --- labelNodeFromRegister (Task 21, Part B) ---------------------------------
+
+test("labelNodeFromRegister names a node by the nearest register beach within 2km", () => {
+  const node = { id: "n1", latitude: 51.50148784, longitude: -9.2658542 }; // Tragumna's coords
+  const beaches = [{ name: "Tragumna", latitude: 51.50148784, longitude: -9.2658542 }];
+  assert.equal(labelNodeFromRegister(node, beaches), "Tragumna");
+});
+
+test("labelNodeFromRegister returns null (OFFSHORE) when no register beach is within 2km", () => {
+  // ~12km from the only beach in the register — the real "Baltimore" mislabel case this
+  // task fixes: an offshore node must not inherit a nearby town/beach's name.
+  const node = { id: "n2", latitude: 51.47199, longitude: -9.432116 };
+  const beaches = [{ name: "Tragumna", latitude: 51.50148784, longitude: -9.2658542 }];
+  assert.equal(labelNodeFromRegister(node, beaches, 2), null);
+});
+
+test("labelNodeFromRegister respects a custom maxKm radius", () => {
+  const node = { id: "n3", latitude: 51.5, longitude: -9.5 };
+  // ~1.11km away
+  const beaches = [{ name: "Near Beach", latitude: 51.51, longitude: -9.5 }];
+  assert.equal(labelNodeFromRegister(node, beaches, 1), null);
+  assert.equal(labelNodeFromRegister(node, beaches, 2), "Near Beach");
+});
+
+test("labelNodeFromRegister returns null for an empty beach list", () => {
+  const node = { id: "n4", latitude: 51.5, longitude: -9.5 };
+  assert.equal(labelNodeFromRegister(node, []), null);
+});
+
+test("BEACH_NAME_RADIUS_KM default matches the documented 2km naming radius", () => {
+  assert.equal(BEACH_NAME_RADIUS_KM, 2);
 });

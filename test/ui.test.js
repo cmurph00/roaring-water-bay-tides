@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeStationIndexes } from "../src/ui.js";
+import { mergeStationIndexes, stationSourceLabel } from "../src/ui.js";
 
 // mergeStationIndexes(ticon, mi): Marine Institute (offline, real published predictions)
 // is preferred over the general TICON/NOAA harmonic dataset for Irish stations. Keep every
@@ -80,4 +80,20 @@ test("mergeStationIndexes defaults epa to [] and behaves exactly as the 2-arg fo
   const mi = [{ id: "mi-a", name: "MI A", country: "Ireland", latitude: 51.559, longitude: -9.1335, timezone: "Europe/Dublin", source: "mi" }];
   const ticon = [{ id: "ticon/cork", name: "Cork", country: "Ireland", latitude: 51.9, longitude: -8.47, timezone: "Europe/Dublin" }];
   assert.deepEqual(mergeStationIndexes(ticon, mi), mergeStationIndexes(ticon, mi, []));
+});
+
+// stationSourceLabel (Task 21, Part D): source transparency in the UI header — never a
+// bare "gauge" label that hides whether the prediction is a real tide gauge or an EPA
+// beach hydrodynamic-model node.
+
+test("stationSourceLabel calls an EPA station a 'beach model'", () => {
+  assert.equal(stationSourceLabel({ source: "epa" }), "beach model");
+});
+
+test("stationSourceLabel calls an MI station a 'tide gauge'", () => {
+  assert.equal(stationSourceLabel({ source: "mi" }), "tide gauge");
+});
+
+test("stationSourceLabel calls a TICON station (no source field) a 'tide gauge'", () => {
+  assert.equal(stationSourceLabel({}), "tide gauge");
 });
