@@ -9,3 +9,7 @@ node_modules/
 
 # Superpowers SDD scratch
 .superpowers/
+
+# Raw Marine Institute / OPW source CSVs (regenerate via scripts/build-mi.mjs;
+# see that file's header for the erddap.marine.ie re-download instructions)
+data/*.csv

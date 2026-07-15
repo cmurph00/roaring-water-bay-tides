@@ -14,11 +14,26 @@ function offlineTides(station, { start, end }) {
     .sort((a, b) => a.time - b.time);
 }
 
+// Marine Institute (and OPW) stations ship pre-computed offline predictions instead of
+// harmonic constituents: `station.tides` is a flat [epochMs, heightMetres, "high"|"low"]
+// array covering a fixed calendar window (2026-2028). Slice it to the requested range
+// rather than running the harmonic engine.
+function precomputedTides(station, { start, end }) {
+  const startMs = start.getTime();
+  const endMs = end.getTime();
+  return station.tides
+    .filter(([epoch]) => epoch >= startMs && epoch <= endMs)
+    .map(([epoch, level, type]) => ({ type, time: new Date(epoch), height: level }))
+    .sort((a, b) => a.time - b.time);
+}
+
 /**
  * Optional online refinement. `apiConfig` (from settings) = { fetchExtremes } — an injected
  * function returning the same shape. Any error falls back silently to offline.
  */
 export async function getTides(station, range, apiConfig = null) {
+  if (Array.isArray(station.tides)) return precomputedTides(station, range);
+
   if (apiConfig && typeof apiConfig.fetchExtremes === "function" && globalThis.navigator?.onLine) {
     try {
       const refined = await apiConfig.fetchExtremes(station, range);

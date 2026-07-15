@@ -4,18 +4,34 @@ import {
   detectLocation,
   distinctCountries,
   filterByCountry,
+  haversineKm,
 } from "./location.js";
 import { getTides } from "./resolver.js";
 import { applyCorrection } from "./correction.js";
 import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from "./format.js";
 
 const INDEX_URL = "./data/stations.json";
+const MI_INDEX_URL = "./data/mi-stations.json";
+const MI_OVERLAP_KM = 3; // TICON entries within this radius of an MI station are dropped
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
+const miStationUrl = (id) => `./data/mi/${id}.json`;
 const LS_KEY = "rwb.selectedStationId";
 const LS_DAYS_KEY = "rwb.days";
 const VALID_DAY_COUNTS = [1, 3, 5, 7, 10];
 const DEFAULT_DAY_COUNT = 3;
 const MAX_RESULTS = 50;
+
+// Marine Institute (offline, CC-BY-4.0) predictions are preferred over the general-purpose
+// TICON/NOAA harmonic dataset for Irish stations: MI covers real published tide-table
+// predictions rather than a computed approximation. Keep every MI entry, plus every TICON
+// entry that isn't within MI_OVERLAP_KM of an MI station (avoids showing two near-duplicate
+// entries for the same physical gauge).
+export function mergeStationIndexes(ticon, mi) {
+  const kept = ticon.filter(
+    (t) => !mi.some((m) => haversineKm({ lat: t.latitude, lon: t.longitude }, { lat: m.latitude, lon: m.longitude }) <= MI_OVERLAP_KM)
+  );
+  return [...mi, ...kept];
+}
 
 let index = [];
 // The currently-selected station (entry + distance), kept so the day-count
@@ -23,16 +39,21 @@ let index = [];
 let currentSelection = null;
 
 async function loadIndex() {
-  index = await fetch(INDEX_URL).then((r) => r.json());
+  const [ticon, mi] = await Promise.all([
+    fetch(INDEX_URL).then((r) => r.json()),
+    fetch(MI_INDEX_URL).then((r) => r.json()),
+  ]);
+  index = mergeStationIndexes(ticon, mi);
 }
 
-async function loadStation(id) {
-  return fetch(stationUrl(id)).then((r) => r.json());
+async function loadStation(entry) {
+  const url = entry.source === "mi" ? miStationUrl(entry.id) : stationUrl(entry.id);
+  return fetch(url).then((r) => r.json());
 }
 
 async function showStation(entry, distanceKm) {
   localStorage.setItem(LS_KEY, entry.id);
-  const station = await loadStation(entry.id);
+  const station = await loadStation(entry);
   currentSelection = { entry, distanceKm };
 
   const days = getDayCount();
@@ -52,7 +73,11 @@ async function showStation(entry, distanceKm) {
     .slice(0, days);
 
   renderHeader(entry, distanceKm, station);
-  renderDays(groups, station.timezone);
+  const emptyMessage =
+    station.source === "mi"
+      ? "Marine Institute predictions cover 2026–2028. Pick a date in range."
+      : "No tide data for this range.";
+  renderDays(groups, station.timezone, emptyMessage);
 }
 
 function renderError(message) {
@@ -100,11 +125,11 @@ function renderTideTable(tides, timezone) {
   return table;
 }
 
-function renderDays(groups, timezone) {
+function renderDays(groups, timezone, emptyMessage = "No tide data for this range.") {
   const container = document.getElementById("results");
   container.innerHTML = "";
   if (!groups.length) {
-    container.innerHTML = '<div class="empty">No tide data for this range.</div>';
+    container.innerHTML = `<div class="empty">${emptyMessage}</div>`;
     return;
   }
   for (const g of groups) {
