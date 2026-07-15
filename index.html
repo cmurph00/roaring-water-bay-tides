@@ -267,8 +267,9 @@
     background: var(--color-panel-flat); border: 1px solid var(--color-border); border-radius: 10px;
     padding: 1rem; margin-bottom: 1.8rem;
   }
-  .map-svg-container { display: flex; justify-content: center; }
-  .map-svg { width: 100%; max-width: 340px; height: auto; display: block; }
+  .map-svg-container { display: flex; justify-content: center; position: relative; }
+  .map-svg { width: 100%; max-width: 340px; height: auto; display: block; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
+  .map-svg:active { cursor: grabbing; }
   .map-sea { fill: var(--color-input-bg); }
   .map-land { fill: var(--color-panel-a); stroke: var(--color-field-border); stroke-width: 1; stroke-linejoin: round; }
   .map-marker { cursor: pointer; }
@@ -279,6 +280,32 @@
   .map-marker:hover .map-marker-shape, .map-marker:focus .map-marker-shape { fill: var(--color-eyebrow); }
   .map-marker:focus { outline: none; }
   .map-you-shape { fill: var(--color-rise); stroke: var(--color-bg); stroke-width: 1; }
+  /* Pan/zoom: markers, labels and the you-dot are counter-scaled by --map-marker-scale (= 1/zoom)
+     so they keep a roughly constant on-screen size as the SVG viewBox zooms in and out. */
+  .map-marker-shape, .map-marker-hit, .map-you-shape,
+  .map-label, .map-town-label, .map-town-dot {
+    transform: scale(var(--map-marker-scale, 1)); transform-box: fill-box; transform-origin: center;
+  }
+  .map-label {
+    display: none; pointer-events: none; text-anchor: middle; font-size: 8px; font-weight: 600;
+    fill: var(--color-label); paint-order: stroke; stroke: var(--color-bg); stroke-width: 2px; stroke-linejoin: round;
+  }
+  .map-svg.show-labels .map-label { display: block; }
+  .map-town { display: none; pointer-events: none; }
+  .map-svg.show-labels .map-town { display: block; }
+  .map-town-label {
+    text-anchor: middle; font-size: 7px; fill: var(--color-faint);
+    paint-order: stroke; stroke: var(--color-bg); stroke-width: 1.8px; stroke-linejoin: round;
+  }
+  .map-town-dot { fill: var(--color-faint); opacity: 0.55; }
+  .map-zoom-controls { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; }
+  .map-zoom-btn {
+    width: 32px; height: 32px; padding: 0; border: 1px solid var(--color-border); border-radius: 7px;
+    background: var(--color-panel-flat); color: var(--color-label); font-size: 1.1rem; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .map-zoom-btn:hover { background: var(--color-input-bg); }
+  .map-zoom-btn:active { transform: translateY(1px); }
   .map-hint {
     text-align: center; font-size: 0.72rem; color: var(--color-label); margin: 0.6rem 0 0; min-height: 1.2em;
   }
@@ -384,7 +411,7 @@
 
     <div class="map-panel" id="map-panel" hidden>
       <div id="map-svg-container" class="map-svg-container"></div>
-      <p id="map-hint" class="map-hint">Tap a marker to see its tides.</p>
+      <p id="map-hint" class="map-hint">Drag to pan &middot; pinch or scroll to zoom &middot; tap a marker for its tides.</p>
       <ul class="map-legend">
         <li><span class="legend-swatch gauge" aria-hidden="true"></span>🌊 Tide gauge</li>
         <li><span class="legend-swatch beach-model" aria-hidden="true"></span>📈 Beach model</li>

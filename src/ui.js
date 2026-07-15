@@ -452,6 +452,7 @@ function renderMapView() {
     outline,
     gauges,
     beachModel,
+    places,
     userLocation: currentUserLocation,
     onSelect: (entry) => {
       const distanceKm = currentUserLocation
