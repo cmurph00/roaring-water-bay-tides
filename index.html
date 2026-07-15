@@ -282,8 +282,7 @@
   .map-you-shape { fill: var(--color-rise); stroke: var(--color-bg); stroke-width: 1; }
   /* Pan/zoom: markers, labels and the you-dot are counter-scaled by --map-marker-scale (= 1/zoom)
      so they keep a roughly constant on-screen size as the SVG viewBox zooms in and out. */
-  .map-marker-shape, .map-marker-hit, .map-you-shape,
-  .map-town-label, .map-town-dot {
+  .map-marker-shape, .map-marker-hit, .map-you-shape, .map-town-dot {
     transform: scale(var(--map-marker-scale, 1)); transform-box: fill-box; transform-origin: center;
   }
   /* Population-tiered town labels: hidden by default; each tier is revealed once the SVG gains the
@@ -292,12 +291,17 @@
   .map-town { display: none; pointer-events: none; }
   .map-svg.tier-1 .map-town-t1, .map-svg.tier-2 .map-town-t2,
   .map-svg.tier-3 .map-town-t3, .map-svg.tier-4 .map-town-t4 { display: block; }
+  /* Town labels are counter-scaled via font-size (calc + the same --map-marker-scale), NOT a CSS
+     transform: iOS Safari/WebKit mishandles `transform-box: fill-box` on SVG <text> and hides it
+     entirely (markers, being basic shapes, are unaffected). Position comes from the x/y attributes
+     (the viewBox handles it), and the halo stroke stays crisp via non-scaling-stroke. */
   .map-town-label {
-    text-anchor: middle; font-size: 6.5px; fill: var(--color-faint);
-    paint-order: stroke; stroke: var(--color-bg); stroke-width: 1.8px; stroke-linejoin: round;
+    text-anchor: middle; fill: var(--color-faint);
+    font-size: calc(6.5px * var(--map-marker-scale, 1));
+    paint-order: stroke; stroke: var(--color-bg); stroke-width: 2px; stroke-linejoin: round; vector-effect: non-scaling-stroke;
   }
-  .map-town-t1 .map-town-label { font-size: 8px; font-weight: 600; fill: var(--color-label); }
-  .map-town-t2 .map-town-label { font-size: 7px; fill: var(--color-label); }
+  .map-town-t1 .map-town-label { font-size: calc(8px * var(--map-marker-scale, 1)); font-weight: 600; fill: var(--color-label); }
+  .map-town-t2 .map-town-label { font-size: calc(7px * var(--map-marker-scale, 1)); fill: var(--color-label); }
   .map-town-dot { fill: var(--color-faint); opacity: 0.55; }
   .map-zoom-controls { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; }
   .map-zoom-btn {
