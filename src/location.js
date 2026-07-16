@@ -110,10 +110,18 @@ export function searchPlaces(query, places) {
 // globalThis.Capacitor is undefined, so this falls through to the original
 // navigator.geolocation path, unchanged.
 export function detectLocation() {
-  if (globalThis.Capacitor?.isNativePlatform?.() && globalThis.Capacitor.Plugins?.Geolocation) {
-    return globalThis.Capacitor.Plugins.Geolocation.getCurrentPosition({ timeout: 10000 }).then(
-      (pos) => ({ lat: pos.coords.latitude, lon: pos.coords.longitude })
-    );
+  const cap = globalThis.Capacitor;
+  if (cap?.isNativePlatform?.() && cap.Plugins?.Geolocation) {
+    const Geo = cap.Plugins.Geolocation;
+    // On Android, Geolocation.getCurrentPosition does NOT itself trigger the runtime permission
+    // prompt — it just fails if the permission was never granted. So request it first (this shows
+    // the Android dialog; a no-op once granted). enableHighAccuracy:false to match our coarse-only
+    // permission. If the user denies, getCurrentPosition rejects and useMyLocation surfaces the
+    // actionable "permission is off" message.
+    const requested = Geo.requestPermissions ? Promise.resolve(Geo.requestPermissions()).catch(() => {}) : Promise.resolve();
+    return requested
+      .then(() => Geo.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000 }))
+      .then((pos) => ({ lat: pos.coords.latitude, lon: pos.coords.longitude }));
   }
 
   return new Promise((resolve, reject) => {
