@@ -61,3 +61,10 @@ dist/
 # Northern Ireland: raw BODC Bangor sea-level series (OGL, re-downloadable; only the
 # derived data/ni/bangor.json is committed)
 data/bodc-bangor-raw.*
+
+# Copyrighted reference tide-table PDFs (Belfast Harbour etc.) — validation-only, NEVER commit/deploy
+data/*.pdf
+
+# Raw BODC UK Tide Gauge Network series (OGL) — derive with scripts/derive-bangor-constituents.py; committed artifact is data/ni/bangor.json
+data/bodc-src/
+data/bodc_data.zip
