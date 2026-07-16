@@ -19,8 +19,11 @@ from glob import glob
 from pathlib import Path
 
 import numpy as np
-from matplotlib.dates import date2num
 from utide import solve
+
+# Fixed epoch for both the datenums we build and the epoch we hand utide — decoupled from
+# matplotlib's version-dependent date2num epoch (the source of a silent zero-constituent bug).
+EPOCH = dt.datetime(1970, 1, 1)
 
 # Station code -> shipped identity. Bangor is the shippable NI gauge; Portrush is derived only
 # to cross-validate the pipeline against the already-bundled TICON Portrush (not shipped here).
@@ -72,7 +75,7 @@ def parse_file(path):
         val, flag = float(m.group(7)), m.group(8)
         # BODC flags: 'N' = null; also guard implausible sentinels. NaNs are fine — utide ignores them.
         h = np.nan if (flag == "N" or abs(val) > 50) else val
-        times.append(date2num(dt.datetime(y, mo, d, hh, mi, ss)))
+        times.append((dt.datetime(y, mo, d, hh, mi, ss) - EPOCH).total_seconds() / 86400.0)
         heights.append(h)
     return times, heights, lat, lon
 
@@ -100,9 +103,9 @@ def derive(code):
     if valid < 24 * 4 * 30:  # ~a month of 15-min data minimum
         sys.exit(f"ERROR: only {valid} valid samples for {code} — need a longer series.")
 
-    # date2num (modern matplotlib) counts days since 1970-01-01; tell utide so, else its default
+    # Our datenums are days since EPOCH (1970-01-01); tell utide the same, else its default
     # epoch='python' (days since 0001) mis-selects and returns zero constituents.
-    coef = solve(t, h, lat=lat, epoch=dt.date(1970, 1, 1), method="ols", conf_int="none", trend=False, verbose=False)
+    coef = solve(t, h, lat=lat, epoch=EPOCH.date(), method="ols", conf_int="none", trend=False, verbose=False)
 
     allowed = allowed_constituent_names()
     cons, dropped = [], []
