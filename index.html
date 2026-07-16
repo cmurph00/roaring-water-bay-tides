@@ -517,7 +517,15 @@
   init();
 </script>
 <script>
-  if ("serviceWorker" in navigator) {
+  // The service worker exists for the WEB PWA (offline on GitHub Pages). Inside the Capacitor
+  // native app the assets are already bundled in the APK and served locally, so the SW is
+  // redundant AND harmful: it serves stale subresources (e.g. an old src/ui.js) from a previous
+  // version's cache while the freshly-updated index.html loads from the APK — which silently
+  // breaks JS-driven features after an app update. So: register the SW only on the web, and
+  // actively unregister any pre-existing SW when running natively.
+  if (globalThis.Capacitor?.isNativePlatform?.()) {
+    navigator.serviceWorker?.getRegistrations?.().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+  } else if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js", { type: "module" });
   }
 </script>
