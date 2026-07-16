@@ -26,6 +26,26 @@ required; CI does the actual `gradlew assembleDebug`). `src/location.js`'s `dete
 prefers the native Capacitor Geolocation plugin when running inside the wrapped app, falling through
 unchanged to the browser `navigator.geolocation` path on the plain web app. iOS wrap not yet started.
 
+**Play Store release prep (Task 25)**: landed — the app id (`applicationId` in
+`android/app/build.gradle`, `appId` in `capacitor.config.json`) is now `com.rwbapps.rwbtides`, the
+permanent Play package name (the code `namespace` stays `com.cmurph00.rwbtides` — harmless, Play only
+reads `applicationId`; `MainActivity.java` stays under `com/cmurph00/rwbtides`). `android/app/build.gradle`
+gained a guarded release `signingConfig` (keystore path/passwords from `ANDROID_KEYSTORE_PATH`/
+`_PASSWORD`/`ANDROID_KEY_ALIAS`/`_PASSWORD` env vars, only attached when `ANDROID_KEYSTORE_PATH` is set,
+so unsigned/debug builds are unaffected), and `AndroidManifest.xml` dropped `ACCESS_FINE_LOCATION` — the
+app only ever needed an approximate position, so it now requests `ACCESS_COARSE_LOCATION` alone (plus
+`INTERNET`). A new `.github/workflows/android-release.yml` ("Android release AAB", manual
+`workflow_dispatch` + `v*` tag) builds a **signed** `.aab` for Play upload — distinct from the existing
+`.github/workflows/android.yml` unsigned debug-APK workflow — decoding a base64 keystore secret to a temp
+file and running `./gradlew bundleRelease`; it requires four repo secrets (`ANDROID_KEYSTORE_BASE64`,
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) that only the operator can
+provide — the keystore itself is never committed. A new `privacy-policy.html` at the repo root, served
+by GitHub Pages, states no data is collected or transmitted (coarse location stays on-device) and is
+linked from `index.html`'s footer; `docs/PLAY-RELEASE.md` is the operator runbook (keystore generation,
+the four secrets, triggering the release workflow, Play Console steps, pre-written Data Safety answers,
+and a store-listing asset checklist — the 512×512 icon exists, the 1024×500 feature graphic is still
+TODO).
+
 **EPA node predictions (all-Ireland)**: landed (Task 18), fixed (Task 21), broadened (Task 24),
 extended nationwide (Task 26) — a third offline prediction source, `data/epa/<node>.json` +
 `data/epa-stations.json`, giving bathing beaches with no nearby real gauge their own EPA
@@ -193,17 +213,20 @@ unit-tests `resolveSpot` in isolation.
 - `DATA-SOURCES.md` — per-data-source license/provenance log (TICON/NOAA, Marine Institute, EPA beaches, EPA all-Ireland tide model, GeoNames coastal places, and — added since — Tailte Éireann/OSi for the named-islands and low-water layers); update alongside any new `scripts/build-*.mjs` data source
 - `test/` — Node-based headless tests (`node --test`), one test file per `src/` module + one per build script (`build-data`, `build-mi`, `build-beaches`, `build-epa`, `build-places`, `geo`, `build-coastline`, `build-lowwater`, and, since Task 22, `resolve-spot` + `accuracy` — the latter an end-to-end regression that SKIPS when its gitignored Crown Copyright fixture is absent, see the Task 22 paragraph above); `src/map.js` has no dedicated test file (DOM-only, see its Architecture entry above)
 - `scripts/build-www.mjs` — packaging-only (not a data build): assembles the offline web app into `www/` (Capacitor's `webDir`) by copying `index.html`, `src/`, `data/`, `manifest.webmanifest`, `sw.js`, `icons/` from repo root, clean each run; GitHub Pages still serves the repo root directly and is untouched by this — `www/` is gitignored and native-build-only. Same "only run when executed directly" guard as `build-data.mjs`/`build-mi.mjs`
-- `capacitor.config.json` — `{ appId: "com.cmurph00.rwbtides", appName: "RWB Tides", webDir: "www" }`
-- `android/` — generated Capacitor Gradle project (via `npx cap add android` + `npx cap sync android`); the core project (`gradlew`, `build.gradle`, `AndroidManifest.xml`) is committed, generated-per-build artifacts (`app/build/`, `.gradle/`, `local.properties`, synced web-asset copy, cordova-plugins dir) are gitignored. `AndroidManifest.xml` has `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION` added (alongside `INTERNET`) for `@capacitor/geolocation`
+- `capacitor.config.json` — `{ appId: "com.rwbapps.rwbtides", appName: "RWB Tides", webDir: "www" }` (Task 25 — `appId` changed from the placeholder `com.cmurph00.rwbtides` to the permanent Play Store package name)
+- `android/` — generated Capacitor Gradle project (via `npx cap add android` + `npx cap sync android`); the core project (`gradlew`, `build.gradle`, `AndroidManifest.xml`) is committed, generated-per-build artifacts (`app/build/`, `.gradle/`, `local.properties`, synced web-asset copy, cordova-plugins dir) are gitignored. `AndroidManifest.xml` requests `ACCESS_COARSE_LOCATION` (alongside `INTERNET`) for `@capacitor/geolocation` — `ACCESS_FINE_LOCATION` was dropped (Task 25): the app only ever needs an approximate position, and coarse-only keeps the Play Data Safety footprint minimal. `app/build.gradle`'s `applicationId` is `com.rwbapps.rwbtides` (Task 25, the permanent Play package name — the `namespace` stays `com.cmurph00.rwbtides`, harmless since Play only reads `applicationId`), and it gained a guarded release `signingConfig` (reads the keystore from `ANDROID_KEYSTORE_PATH`/`_PASSWORD`/`ANDROID_KEY_ALIAS`/`_PASSWORD` env vars, only attached to the `release` build type when `ANDROID_KEYSTORE_PATH` is set — unsigned/debug builds are unaffected) consumed by the release workflow below
 - `.github/workflows/android.yml` — CI workflow (manual `workflow_dispatch` + on `v*` tag push) that runs `npm run build:www` → `npx cap sync android` → `./gradlew assembleDebug` and uploads the unsigned debug APK as an artifact; no local Android SDK is required or used on dev machines, CI is the only place the actual Gradle build runs; pinned to Node 22 (Capacitor CLI requires ≥22) and JDK 21 (Capacitor 7 / AGP 8.13 target) — bump either only alongside the corresponding Capacitor/AGP upgrade
+- `.github/workflows/android-release.yml` — Task 25. Signed-AAB release workflow (manual `workflow_dispatch` + `v*` tag push), distinct from `android.yml`'s unsigned debug APK: Node 22 + JDK 21, decodes a base64 keystore secret to a `$RUNNER_TEMP` file, runs `./gradlew bundleRelease`, uploads `app-release.aab`. Requires four repo secrets — `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` — that only the operator can supply; the keystore itself is never committed
 - `docs/BUILD-APK.md` — operator instructions for triggering the Android workflow and downloading/sideloading the resulting debug APK
+- `docs/PLAY-RELEASE.md` — Task 25. Operator runbook for the Play Store release: generating the upload keystore (`keytool`), setting the four GitHub secrets above, triggering the release workflow, Play Console setup steps, pre-written Data Safety answers ("No data collected"), and a store-listing asset checklist (512×512 icon exists; the 1024×500 feature graphic is still TODO)
+- `privacy-policy.html` — Task 25. Repo-root static page served by GitHub Pages (`https://cmurph00.github.io/roaring-water-bay-tides/privacy-policy.html`), stating no data is collected or transmitted (coarse location is used on-device only); linked from `index.html`'s footer (`.origin` "Privacy" link). Required for the Play Console store listing
 - `docs/beach-validation.md` / `docs/marine-ie-data-audit.md` — dated validation/survey docs (not living architecture docs): the former cross-checks app-resolved beach tide timings against independent Marine Institute EPA ground truth; the latter surveys the wider ERDDAP catalog for future data-source candidates
 - `docs/scratch/` — tracked (not gitignored, unlike `.superpowers/sdd/`) one-off Python analysis scripts backing the validation docs above (extrema extraction, comparison/matching, report formatting)
 - `.superpowers/sdd/` — gitignored scratch dir for task-by-task implementation reports and throwaway scripts (e.g. `slice-engine.mjs` used once to extract the engine from `index.html`); not shipped, not part of the app
 
 Key libs: `@neaps/tide-predictor` (MIT, harmonic engine, inlined) + `@neaps/tide-database` (devDependency only — NOAA + TICON-4 station data, used solely by `build-data.mjs`). Marine Institute/OPW data has no npm dependency — it's built from raw CSVs downloaded manually from the ERDDAP server (see `scripts/build-mi.mjs` header). The GeoNames gazetteer likewise has no npm dependency — `scripts/build-places.mjs` downloads the raw `IE.zip` directly and unzips it via the system `unzip` binary through `node:child_process` (build-time only, never a web runtime dep). Capacitor (`@capacitor/core`, `@capacitor/android`, `@capacitor/geolocation`, `@capacitor/cli`) wraps the same static web app for the Android build — no bundler, no code duplication.
 
-Phase 2 (Android via Capacitor): landed — see `android/`, `capacitor.config.json`, `.github/workflows/android.yml` above. iOS wrap not yet started; browser-only APIs remain isolated in dedicated units like `location.js` so an iOS wrap shouldn't require rework.
+Phase 2 (Android via Capacitor): landed — see `android/`, `capacitor.config.json`, `.github/workflows/android.yml` above. iOS wrap not yet started; browser-only APIs remain isolated in dedicated units like `location.js` so an iOS wrap shouldn't require rework. Play Store release prep (Task 25) landed on top of this — see `.github/workflows/android-release.yml`, `docs/PLAY-RELEASE.md`, `privacy-policy.html` above; remaining gaps are operator-only: the four signing secrets and a 1024×500 feature-graphic PNG.
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: git-insights -->
