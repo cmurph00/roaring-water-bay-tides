@@ -24,7 +24,15 @@
 <title>Ireland's Tides</title>
 <link rel="manifest" href="./manifest.webmanifest" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Space+Mono:wght@400;700&display=swap');
+  /* Self-hosted OFL webfonts (downloaded by scripts/fetch-fonts.py into ./fonts/) so the app
+     renders correctly OFFLINE — no runtime CDN fetch, no third-party IP leak. All SIL OFL 1.1.
+     Bitter = display/headings; Space Grotesk = UI/body/labels; Space Mono = tide-time numerals
+     only (kept for its structural tabular figures). Precached via src/cache-manifest.js. */
+  @font-face { font-family: 'Bitter'; font-style: normal; font-weight: 500; font-display: swap; src: url('./fonts/bitter-500.woff2') format('woff2'); }
+  @font-face { font-family: 'Bitter'; font-style: normal; font-weight: 700; font-display: swap; src: url('./fonts/bitter-700.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 300 700; font-display: swap; src: url('./fonts/space-grotesk-var.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('./fonts/space-mono-400.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url('./fonts/space-mono-700.woff2') format('woff2'); }
 
   /* ---------------------------------------------------------------------
    * Theme tokens
@@ -44,6 +52,11 @@
    * ------------------------------------------------------------------- */
   :root {
     color-scheme: light dark;
+
+    /* Type families (self-hosted above). Not theme-dependent, so defined once here. */
+    --font-display: 'Bitter', Georgia, 'Times New Roman', serif;
+    --font-ui: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
     /* Light ("chart paper") */
     --color-bg: #f6efe1;
@@ -162,7 +175,7 @@
       radial-gradient(ellipse at 100% 110%, var(--color-bg-grad-2) 0%, transparent 50%),
       var(--color-bg);
     color: var(--color-body);
-    font-family: 'Space Mono', monospace;
+    font-family: var(--font-ui);
     padding: 0 0 4rem;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
@@ -180,24 +193,24 @@
     background: transparent; color: var(--color-label);
     border: 1px solid var(--color-field-border); border-radius: 999px;
     padding: 0.32rem 0.65rem 0.32rem 0.55rem;
-    font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+    font-family: var(--font-ui); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;
     cursor: pointer; transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   }
   .theme-toggle:hover { color: var(--color-eyebrow); border-color: var(--color-eyebrow); background: var(--color-panel-flat); }
   .theme-toggle-icon { font-size: 0.9rem; line-height: 1; }
 
   .eyebrow {
-    font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+    font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--color-eyebrow); margin: 0 0 0.5rem;
   }
 
   h1 {
-    font-family: 'Fraunces', serif; font-weight: 600; font-optical-sizing: auto;
-    font-size: clamp(2.1rem, 7vw, 2.8rem); margin: 0 0 0.35rem; letter-spacing: -0.01em;
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.95rem, 6.5vw, 2.6rem); line-height: 1.08; margin: 0 0 0.35rem; letter-spacing: -0.01em;
     color: var(--color-heading);
   }
 
-  .sub { margin: 0; color: var(--color-label); font-size: 0.85rem; line-height: 1.5; max-width: 46ch; }
+  .sub { margin: 0; color: var(--color-label); font-size: 0.9375rem; line-height: 1.55; max-width: 46ch; }
 
   /* Compact "back to picker" bar shown once a spot is chosen (see .station-view below). Hidden by
      default via the [hidden] attr; the .station-view rule's display wins to reveal it. */
@@ -215,7 +228,7 @@
   .station-view .picker-back { display: inline-flex; }
   .station-view header { padding-bottom: 0.9rem; margin-bottom: 1rem; }
   .station-view header .eyebrow, .station-view header .sub, .station-view .compass { display: none; }
-  .station-view header h1 { font-size: 1.3rem; margin: 0; }
+  .station-view header h1 { font-size: 1.375rem; line-height: 1.2; margin: 0; }
 
   .compass {
     width: 50px; height: 50px; opacity: 0.9; flex: none;
@@ -229,8 +242,8 @@
   .view-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
   .view-toggle-btn {
     background: transparent; color: var(--color-label); border: 1px solid var(--color-field-border);
-    border-radius: 999px; padding: 0.38rem 1rem; font-family: 'Space Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+    border-radius: 999px; padding: 0.38rem 1rem; font-family: var(--font-ui); font-weight: 500; font-size: 0.8125rem;
+    letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
     transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   }
   .view-toggle-btn:hover { color: var(--color-eyebrow); border-color: var(--color-eyebrow); }
@@ -253,11 +266,13 @@
   #list-panel[hidden] { display: none; }
 
   .field { display: flex; flex-direction: column; gap: 0.35rem; }
-  .field label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-label); }
+  .field label { font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-label); }
 
   input[type="date"], input[type="text"], select {
     background: var(--color-input-bg); color: var(--color-body); border: 1px solid var(--color-field-border);
-    border-radius: 6px; padding: 0.55rem 0.6rem; font-family: 'Space Mono', monospace; font-size: 0.9rem;
+    border-radius: 6px; padding: 0.55rem 0.6rem; font-family: var(--font-ui);
+    /* 16px (1rem) minimum: below this iOS Safari auto-zooms the viewport on focus. */
+    font-size: 1rem;
   }
 
   input[type="text"] { min-width: 14rem; width: 100%; }
@@ -270,8 +285,8 @@
 
   button {
     background: var(--color-accent); color: var(--color-accent-contrast); border: none; border-radius: 6px;
-    padding: 0.6rem 1.1rem; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 0.85rem;
-    letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s ease, transform 0.1s ease;
+    padding: 0.6rem 1.1rem; font-family: var(--font-ui); font-weight: 700; font-size: 0.9375rem;
+    letter-spacing: 0.02em; cursor: pointer; transition: background 0.15s ease, transform 0.1s ease;
   }
   button:hover { background: var(--color-accent-hover); }
   button:active { transform: translateY(1px); }
@@ -286,7 +301,7 @@
   }
   .search-results:empty { display: none; }
   .search-results li {
-    padding: 0.55rem 0.75rem; font-size: 0.85rem; cursor: pointer; border-top: 1px solid var(--color-border);
+    padding: 0.6rem 0.75rem; font-size: 0.9375rem; cursor: pointer; border-top: 1px solid var(--color-border);
     color: var(--color-body);
   }
   .search-results li:first-child { border-top: none; }
@@ -359,16 +374,16 @@
   .map-zoom-btn:hover { background: var(--color-input-bg); }
   .map-zoom-btn:active { transform: translateY(1px); }
   .map-hint {
-    text-align: center; font-size: 0.72rem; color: var(--color-label); margin: 0.6rem 0 0; min-height: 1.2em;
+    text-align: center; font-size: 0.8125rem; color: var(--color-label); margin: 0.6rem 0 0; min-height: 1.2em;
   }
   .map-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.9rem; margin: 0.7rem 0 0; padding: 0; list-style: none; }
-  .map-legend li { display: flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; color: var(--color-label); }
+  .map-legend li { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; color: var(--color-label); }
   .legend-swatch { display: inline-block; width: 10px; height: 10px; flex: none; }
   .legend-swatch.gauge { border-radius: 50%; background: var(--color-fall); }
   .legend-swatch.beach-model { background: var(--color-accent); clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
   .legend-swatch.you { border-radius: 50%; background: var(--color-rise); }
   .legend-swatch.lowwater { height: 3px; align-self: center; background: var(--color-fall); opacity: 0.5; }
-  .map-note { text-align: center; font-size: 0.62rem; color: var(--color-faint); margin: 0.5rem 0 0; line-height: 1.4; }
+  .map-note { text-align: center; font-size: 0.75rem; color: var(--color-faint); margin: 0.5rem 0 0; line-height: 1.4; }
 
   .station-header {
     margin: 0 0 1.2rem; font-size: 0.85rem; color: var(--color-label); line-height: 1.5;
@@ -380,33 +395,35 @@
   }
 
   .day-head {
-    padding: 0.75rem 1rem; font-family: 'Fraunces', serif; font-size: 1.05rem; color: var(--color-heading);
+    padding: 0.75rem 1rem; font-family: var(--font-display); font-weight: 500; font-size: 1.125rem; color: var(--color-heading);
     border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: baseline;
   }
-  .day-head .range { font-family: 'Space Mono', monospace; font-size: 0.68rem; color: var(--color-label); }
+  .day-head .range { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--color-label); }
 
   table { width: 100%; border-collapse: collapse; }
-  td { padding: 0.6rem 1rem; font-size: 0.92rem; border-top: 1px solid var(--color-border); color: var(--color-body); }
+  td { padding: 0.7rem 1rem; font-size: 0.9375rem; border-top: 1px solid var(--color-border); color: var(--color-body); }
   tr:first-child td { border-top: none; }
 
   .kind { display: flex; align-items: center; gap: 0.45rem; width: 5.2rem; }
-  .kind .arrow { font-size: 0.85rem; }
+  .kind .arrow { font-size: 0.95rem; }
   .kind.high .arrow { color: var(--color-rise); }
   .kind.low .arrow { color: var(--color-fall); }
-  .kind .label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-label); }
+  .kind .label { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-label); }
 
-  .time { font-weight: 700; letter-spacing: 0.02em; color: var(--color-heading); }
-  .height { text-align: right; color: var(--color-label); }
+  /* Tide time + height stay on the monospace face for structural tabular-figure alignment
+     (the rest of the app is now the proportional UI sans). Time is the hero — largest data on screen. */
+  .time { font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.2rem, 4.5vw, 1.375rem); letter-spacing: 0; color: var(--color-heading); }
+  .height { font-family: var(--font-mono); text-align: right; color: var(--color-label); }
 
   .empty, .loading { text-align: center; padding: 2rem 1rem; color: var(--color-faint); font-size: 0.85rem; }
 
   footer {
     margin-top: 2rem; padding-top: 1.4rem; border-top: 1px solid var(--color-border);
-    font-size: 0.72rem; line-height: 1.6; color: var(--color-faint);
+    font-size: 0.8rem; line-height: 1.6; color: var(--color-faint);
   }
   footer strong { color: var(--color-label); }
-  .credits { margin-top: 0.6rem; font-size: 0.68rem; color: var(--color-faint); }
-  .origin { margin-top: 0.9rem; font-size: 0.72rem; color: var(--color-label); text-align: center; }
+  .credits { margin-top: 0.6rem; font-size: 0.8rem; color: var(--color-faint); }
+  .origin { margin-top: 0.9rem; font-size: 0.8rem; color: var(--color-label); text-align: center; }
   .origin a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
   .err { color: var(--color-rise); font-size: 0.8rem; margin-top: 0.6rem; }

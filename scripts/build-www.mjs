@@ -19,6 +19,7 @@ const ENTRIES = [
   ["manifest.webmanifest", "manifest.webmanifest"],
   ["sw.js", "sw.js"],
   ["icons", "icons"],
+  ["fonts", "fonts"],
 ];
 
 async function main() {
