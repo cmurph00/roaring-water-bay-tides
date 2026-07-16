@@ -204,6 +204,23 @@ async function showStation(entry, distanceKm, locality) {
       ? "Marine Institute predictions cover 2026–2028. Pick a date in range."
       : "No tide data for this range.";
   renderDays(groups, station.timezone, emptyMessage);
+
+  // Collapse the picker so the tide table is the hero; the back bar re-opens List/Map.
+  const backLabel = locality && locality !== entry.name ? `${locality} → ${entry.name}` : entry.name;
+  collapsePicker(backLabel);
+}
+
+// Once a spot is chosen, hide the List/Map picker + shrink the page header (via `.station-view` on
+// .wrap, see index.html CSS) so the tide table dominates. Show a compact "‹ <spot>" back bar.
+function collapsePicker(label) {
+  document.getElementById("picker-back-label").textContent = label;
+  document.querySelector(".wrap").classList.add("station-view");
+}
+
+// Restore the full header + List/Map picker (back-bar tap), re-showing whichever view was active.
+function expandPicker() {
+  document.querySelector(".wrap").classList.remove("station-view");
+  setView(getStoredView());
 }
 
 function renderError(message) {
@@ -538,6 +555,7 @@ export async function init() {
   wireDayCount();
   wireViewToggle();
   document.getElementById("use-location").addEventListener("click", useMyLocation);
+  document.getElementById("picker-back").addEventListener("click", expandPicker);
 
   const savedId = localStorage.getItem(LS_KEY);
   const saved = index.find((s) => s.id === savedId);

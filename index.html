@@ -199,6 +199,24 @@
 
   .sub { margin: 0; color: var(--color-label); font-size: 0.85rem; line-height: 1.5; max-width: 46ch; }
 
+  /* Compact "back to picker" bar shown once a spot is chosen (see .station-view below). Hidden by
+     default via the [hidden] attr; the .station-view rule's display wins to reveal it. */
+  .picker-back {
+    align-items: center; gap: 0.4rem; margin: 0 0 1rem; font: inherit; font-size: 0.85rem;
+    background: var(--color-panel-flat); border: 1px solid var(--color-border); border-radius: 999px;
+    padding: 0.5rem 0.95rem; color: var(--color-label); cursor: pointer; max-width: 100%;
+  }
+  .picker-back:hover { color: var(--color-eyebrow); border-color: var(--color-eyebrow); }
+  .picker-back #picker-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .picker-back-chevron { font-size: 1.15rem; line-height: 1; }
+  /* Once a station is selected the tide table is the hero: collapse the whole picker and shrink the
+     page header to a slim title, leaving just the back bar + station header above the table. */
+  .station-view #view-toggle, .station-view .controls, .station-view #map-panel { display: none; }
+  .station-view .picker-back { display: inline-flex; }
+  .station-view header { padding-bottom: 0.9rem; margin-bottom: 1rem; }
+  .station-view header .eyebrow, .station-view header .sub, .station-view .compass { display: none; }
+  .station-view header h1 { font-size: 1.3rem; margin: 0; }
+
   .compass {
     width: 50px; height: 50px; opacity: 0.9; flex: none;
   }
@@ -411,8 +429,12 @@
       </div>
       <p class="eyebrow">Offline tide predictor</p>
       <h1>Ireland&rsquo;s Tides</h1>
-      <p class="sub">Predictions for the Irish coast &mdash; from the nearest Marine Institute gauge, EPA beach model, or harmonic station, computed directly. No proxy station, no hand-tuned offset. Not for navigation.</p>
+      <p class="sub">Offline high &amp; low tide times for the Irish coast. Planning only &mdash; not for navigation.</p>
     </header>
+
+    <button type="button" id="picker-back" class="picker-back" hidden aria-label="Change location">
+      <span class="picker-back-chevron" aria-hidden="true">&lsaquo;</span> <span id="picker-back-label"></span>
+    </button>
 
     <div class="view-toggle" id="view-toggle" role="group" aria-label="Choose how to pick a station">
       <button type="button" class="view-toggle-btn" data-view="list">List</button>
