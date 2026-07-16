@@ -14,27 +14,47 @@ const LOCAL_SRC_DIR = "data/ni-beaches-src";
 const DAERA_URL = process.env.DAERA_BATHING_URL
   || "https://services-eu1.arcgis.com/.../BathingWaters/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson";
 
+// Title-case an ALL-CAPS official name ("PORTRUSH WHITEROCKS" -> "Portrush Whiterocks",
+// "BROWN'S BAY" -> "Brown's Bay"); leave an already-mixed-case name untouched.
+export function normalizeBeachName(name) {
+  const t = name.trim();
+  if (t !== t.toUpperCase()) return t;
+  return t.replace(/\S+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+}
+
+// Extract [lon, lat] from whatever a council/DAERA export uses: prefer explicit
+// centroidX/centroidY props (the DAERA directive's Polygon features carry these), else a
+// Point/MultiPoint, else the first outer-ring vertex of a Polygon/MultiPolygon.
+export function extractLonLat(props, geometry) {
+  const cx = Number(props.centroidX);
+  const cy = Number(props.centroidY);
+  if (Number.isFinite(cx) && Number.isFinite(cy)) return [cx, cy];
+  const g = geometry?.type;
+  const c = geometry?.coordinates;
+  if (g === "Point" && Array.isArray(c)) return c;
+  if (g === "MultiPoint" && Array.isArray(c) && c.length > 0) return c[0];
+  if (g === "Polygon" && Array.isArray(c?.[0]?.[0])) return c[0][0];
+  if (g === "MultiPolygon" && Array.isArray(c?.[0]?.[0]?.[0])) return c[0][0][0];
+  return null;
+}
+
 export function featureToNiBeach(feature) {
   const props = feature?.properties ?? {};
-  const geometry = feature?.geometry;
-  const name = props.Name ?? props.NAME ?? props.BW_NAME;
-  if (typeof name !== "string" || name.trim().length === 0) return null;
+  const rawName = props.Name ?? props.NAME ?? props.BW_NAME;
+  if (typeof rawName !== "string" || rawName.trim().length === 0) return null;
 
-  let coords = null;
-  if (geometry?.type === "MultiPoint" && Array.isArray(geometry.coordinates) && geometry.coordinates.length > 0) coords = geometry.coordinates[0];
-  else if (geometry?.type === "Point" && Array.isArray(geometry.coordinates)) coords = geometry.coordinates;
+  const coords = extractLonLat(props, feature?.geometry);
   if (!Array.isArray(coords) || coords.length < 2) return null;
-
   const longitude = Number(coords[0]);
   const latitude = Number(coords[1]);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
 
   return {
-    name: name.trim(),
+    name: normalizeBeachName(rawName),
     latitude,
     longitude,
     classification: props.Classification ?? props.CLASS ?? props.Water_Qual ?? null,
-    url: props.URL ?? null,
+    url: props.HYPERLINK ?? props.URL ?? null,
     country: "Northern Ireland",
     type: "beach",
   };
