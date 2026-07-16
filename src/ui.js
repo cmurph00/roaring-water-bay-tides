@@ -20,6 +20,7 @@ const MI_INDEX_URL = "./data/mi-stations.json";
 const EPA_INDEX_URL = "./data/epa-stations.json";
 const NI_INDEX_URL = "./data/ni-stations.json";
 const BEACHES_URL = "./data/beaches.json";
+const NI_BEACHES_URL = "./data/ni-beaches.json";
 const PLACES_URL = "./data/places.json";
 const OUTLINE_URL = "./data/ireland-outline.json";
 const LOWWATER_URL = "./data/low-water.json";
@@ -133,16 +134,13 @@ async function loadIndex() {
 
   index = mergeStationIndexes(ticon, mi, epa, ni);
 
-  // Beaches are an optional enhancement layer — a missing/404 data/beaches.json (e.g. an
-  // older cached build, or the file simply not having been generated) must not break the
-  // rest of the app, so default to [] rather than letting the rejection/parse error
-  // propagate out of loadIndex/init.
-  try {
-    const res = await fetch(BEACHES_URL);
-    beaches = res.ok ? await res.json() : [];
-  } catch {
-    beaches = [];
-  }
+  // Beaches are an optional enhancement layer — a missing/404 file must not break init().
+  // The RoI (EPA) and NI (DAERA) beach registers merge into one search-alias layer.
+  const beachFetch = async (url) => {
+    try { const res = await fetch(url); return res.ok ? await res.json() : []; } catch { return []; }
+  };
+  const [roiBeaches, niBeaches] = await Promise.all([beachFetch(BEACHES_URL), beachFetch(NI_BEACHES_URL)]);
+  beaches = [...roiBeaches, ...niBeaches];
 
   // GeoNames coastal-place gazetteer — same optional-enhancement contract as beaches above.
   try {
