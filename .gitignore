@@ -47,3 +47,8 @@ android/capacitor-cordova-android-plugins/
 data/osi-lowwater-raw.geojson
 # Raw OSi national coast (mainland coastline, baked into data/ireland-outline.json)
 data/osi-coast-raw.geojson
+
+# Built app bundles / APKs (downloaded release artifacts) — never commit
+dist/
+*.aab
+*.apk
