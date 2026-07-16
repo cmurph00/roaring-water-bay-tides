@@ -52,3 +52,7 @@ data/osi-coast-raw.geojson
 dist/
 *.aab
 *.apk
+
+# Northern Ireland: raw BODC Bangor sea-level series (OGL, re-downloadable; only the
+# derived data/ni/bangor.json is committed)
+data/bodc-bangor-raw.*
