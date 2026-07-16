@@ -36,6 +36,30 @@ Licenses present: cc-by-4.0.
   registered bathing beach or a GeoNames coastal place (town/harbour/bay/...); only
   genuinely offshore nodes are dropped. Regenerate via `node scripts/build-epa.mjs`.
 
+## Northern Ireland tide gauge (Bangor, derived harmonics)
+
+- **BODC UK Tide Gauge Network** (British Oceanographic Data Centre / NERC, Open Government
+  Licence) — https://www.bodc.ac.uk/data/hosted_data_systems/sea_level/uk_tide_gauge_network/ .
+  The Bangor (Co. Down) processed sea-level series from this network is the sole source for
+  `data/ni/bangor.json`'s tidal harmonic constituents: `scripts/derive-bangor-constituents.py`
+  fits them from the raw BODC series via `utide` (manual download only, no API — see the script
+  header for the exact processed-data URL; the raw series itself is gitignored source data, not
+  committed), so Bangor predicts fully offline exactly like the TICON/NOAA stations. **No
+  UKHO/Admiralty data of any kind is used anywhere in this app** — BODC gauge observations
+  (OGL, commercial-use-safe) are a different, unrelated data lineage from Admiralty
+  tide-table predictions (Crown Copyright, not redistributable), and the two are never mixed.
+  Regenerate via `python3 scripts/derive-bangor-constituents.py`; feeds `data/ni-stations.json`.
+
+## DAERA Northern Ireland bathing waters
+
+- **DAERA** (Department of Agriculture, Environment and Rural Affairs, Northern Ireland, Open
+  Government Licence) — via its ArcGIS FeatureServer bathing-waters open dataset
+  (https://opendata-daerani.hub.arcgis.com/). Covers NI's named registered bathing beaches,
+  used for beach names/locations only (`data/ni-beaches.json`) — same search-only-alias
+  contract as the EPA (Ireland) beaches above: tide predictions come from the app's nearest
+  real NI prediction station (Portrush or Bangor), not from DAERA data. Regenerate via
+  `node scripts/build-ni-beaches.mjs`.
+
 ## GeoNames coastal-place gazetteer
 
 - **GeoNames** (CC-BY-4.0) — https://www.geonames.org/ , via the Ireland country dump
