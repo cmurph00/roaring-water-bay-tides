@@ -39,11 +39,20 @@ Licenses present: cc-by-4.0.
 ## GeoNames coastal-place gazetteer
 
 - **GeoNames** (CC-BY-4.0) — https://www.geonames.org/ , via the Ireland country dump
-  (https://download.geonames.org/export/dump/IE.zip). This product uses data from
-  GeoNames. Covers 4539 named coastal places (towns, harbours, bays, coves,
+  (https://download.geonames.org/export/dump/IE.zip) and, for Northern Ireland, the Great
+  Britain country dump (https://download.geonames.org/export/dump/GB.zip, filtered to its
+  "NIR" admin1 rows — the IE dump carries no Northern Ireland rows at all). This product uses
+  data from GeoNames. Covers 4554 named coastal places (towns, harbours, bays, coves,
   islands, ...) within ~8km of a real tide-prediction source, used for search only —
   a place resolves to the nearest real prediction station (see src/ui.js), not to
-  GeoNames data. Regenerate via `node scripts/build-places.mjs`.
+  GeoNames data. NI places currently anchor off the single NI-coast TICON station
+  (Portrush) since `data/ni-stations.json` is still empty pending its own data source —
+  expect wider NI coverage (e.g. Bangor-area places) once that lands. NI counties (Antrim,
+  Down, Londonderry) are derived from each row's modern (2015 local-government-district
+  reform) admin2 GSS code, not a legacy county abbreviation — see `COUNTY_BY_CODE` in
+  `scripts/build-places.mjs` for the verified code map and its one known coarse-grained
+  limitation (the "Causeway Coast and Glens" district spans historic Antrim and Londonderry
+  under a single code). Regenerate via `node scripts/build-places.mjs`.
 
 ## Coastline + islands outline (offline SVG map picker)
 

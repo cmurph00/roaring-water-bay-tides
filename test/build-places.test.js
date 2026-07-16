@@ -206,3 +206,17 @@ test("dedupPlaces keeps two entries with the same name but different kind/locati
   ];
   assert.equal(dedupPlaces(places).length, 2);
 });
+
+// --- countyForRow (Northern Ireland, GeoNames GB dump) ------------------------------
+
+test("countyForRow maps NI (GB dump) counties", () => {
+  // GB dump admin1 code for Northern Ireland is "NIR". admin2 is the MODERN (2015
+  // local-government-district reform) GSS code, e.g. "N09000008" — verified directly against
+  // data/GB.txt: no NI populated-place row uses a legacy 3-letter county code (those only
+  // appear as alternatenames on old pre-2015 ADM2H boundary rows, never as a place's own
+  // admin2 value).
+  assert.equal(countyForRow({ admin1: "NIR", admin2: "N09000008" }), "Antrim"); // Mid and East Antrim (Larne, Carrickfergus)
+  assert.equal(countyForRow({ admin1: "NIR", admin2: "N09000011" }), "Down"); // Ards and North Down (Bangor, Donaghadee)
+  assert.equal(countyForRow({ admin1: "NIR", admin2: "N09000005" }), "Londonderry"); // Derry City and Strabane
+  assert.equal(countyForRow({ admin1: "NIR", admin2: "N09000006" }), null, "inland district (Fermanagh and Omagh) not shipped");
+});
