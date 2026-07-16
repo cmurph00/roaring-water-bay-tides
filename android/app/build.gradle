@@ -4,7 +4,7 @@ android {
     namespace = "com.cmurph00.rwbtides"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.cmurph00.rwbtides"
+        applicationId "com.rwbapps.rwbtides"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -16,10 +16,27 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Populated in CI from GitHub secrets (see .github/workflows/android-release.yml and
+            // docs/PLAY-RELEASE.md). Absent for local/debug builds — the buildTypes guard below
+            // only attaches this config when the keystore env is present, so unsigned builds still work.
+            def ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (ksPath != null) {
+                storeFile file(ksPath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (System.getenv("ANDROID_KEYSTORE_PATH") != null) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

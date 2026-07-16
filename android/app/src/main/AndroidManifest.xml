@@ -37,7 +37,9 @@
 
     <!-- Permissions -->
 
+    <!-- Coarse location only: the app just needs an approximate position to pick your nearest tide
+         station; it never needs precise GPS. Requesting only COARSE keeps the Play Data Safety
+         footprint minimal and the runtime prompt low-friction. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 </manifest>
