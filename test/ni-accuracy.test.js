@@ -11,7 +11,7 @@ import { getTides } from "../src/resolver.js";
 // south-Down spots resolve to a distant gauge, so bounds are looser than the RoI test.
 const MEDIAN_MAX_MIN = 12;
 const WORST_MAX_MIN = 25;
-const NI_SPOTS = new Set(["Bangor", "Portrush", "Portstewart", "Ballyholme", "Benone", "Newcastle"]);
+const NI_SPOTS = new Set(["Bangor", "Belfast", "Portrush", "Portstewart", "Ballyholme", "Benone", "Newcastle"]);
 
 const dataDir = fileURLToPath(new URL("../data/", import.meta.url));
 const fixturePath = fileURLToPath(new URL("./fixtures/reference-tides.json", import.meta.url));
@@ -37,20 +37,21 @@ test("NI HW prediction accuracy vs reference", { skip: hasFixture ? false : "ref
 
   const index = mergeStationIndexes(rd("stations.json"), rd("mi-stations.json"), rdOrEmpty("epa-stations.json"), rdOrEmpty("ni-stations.json"));
   const overrides = rdOrEmpty("spot-overrides.json");
-  const start = new Date(`${ref.date}T00:00:00Z`);
-  const end = new Date(start.getTime() + 30 * 3600 * 1000);
   const errors = [];
   const rows = [];
 
   for (const p of niPoints) {
+    const date = p.date ?? ref.date; // NI points carry their own date; fall back to the shared one
+    const start = new Date(`${date}T00:00:00Z`);
+    const end = new Date(start.getTime() + 30 * 3600 * 1000);
     const resolved = resolveSpot(p.lat, p.lon, index, overrides);
     assert.ok(resolved, `no station resolved for ${p.spot}`);
     const extremes = await getTides(loadFull(resolved.station), { start, end });
-    const eveningHigh = extremes.find((t) => t.type === "high" && tzDay(t.time) === ref.date && tzHour(t.time) >= 12);
-    assert.ok(eveningHigh, `no evening HW predicted for ${p.spot} (via ${resolved.station.name})`);
+    const eveningHigh = extremes.find((t) => t.type === "high" && tzDay(t.time) === date && tzHour(t.time) >= 12);
+    assert.ok(eveningHigh, `no evening HW predicted for ${p.spot} on ${date} (via ${resolved.station.name})`);
     const err = toMin(hhmm(eveningHigh.time)) - toMin(p.hw[p.hw.length - 1]);
     errors.push(Math.abs(err));
-    rows.push(`${p.spot.padEnd(14)} truth ${p.hw[p.hw.length - 1]} pred ${hhmm(eveningHigh.time)} Δ${err >= 0 ? "+" : ""}${err}  via ${resolved.station.name}`);
+    rows.push(`${p.spot.padEnd(14)} ${date} truth ${p.hw[p.hw.length - 1]} pred ${hhmm(eveningHigh.time)} Δ${err >= 0 ? "+" : ""}${err}  via ${resolved.station.name}`);
   }
   const sorted = errors.slice().sort((a, b) => a - b);
   const median = sorted[Math.floor(sorted.length / 2)];
