@@ -24,6 +24,11 @@ data/*.csv
 data/IE.zip
 data/IE.txt
 
+# Raw GeoNames GB dump (Northern Ireland rows only kept in data/places.json; regenerate via
+# scripts/build-places.mjs)
+data/GB.zip
+data/GB.txt
+
 # Raw Natural Earth coastline (mainland) + OSi/Tailte Éireann islands (islands) — inputs to
 # scripts/build-coastline.mjs. The coastline is re-downloaded by the script; the OSi islands
 # file is a manual open-data download (see build-coastline.mjs header for the source URL).
@@ -52,3 +57,14 @@ data/osi-coast-raw.geojson
 dist/
 *.aab
 *.apk
+
+# Northern Ireland: raw BODC Bangor sea-level series (OGL, re-downloadable; only the
+# derived data/ni/bangor.json is committed)
+data/bodc-bangor-raw.*
+
+# Copyrighted reference tide-table PDFs (Belfast Harbour etc.) — validation-only, NEVER commit/deploy
+data/*.pdf
+
+# Raw BODC UK Tide Gauge Network series (OGL) — derive with scripts/derive-bangor-constituents.py; committed artifact is data/ni/bangor.json
+data/bodc-src/
+data/bodc_data.zip

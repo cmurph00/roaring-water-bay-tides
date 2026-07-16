@@ -44,7 +44,9 @@ test("HW prediction accuracy vs reference tide times", { skip: hasFixture ? fals
   const errors = [];
   const rows = [];
 
-  for (const p of ref.points) {
+  // RoI points use the shared ref.date; NI points carry their own `date` and are validated
+  // in ni-accuracy.test.js instead — skip them here.
+  for (const p of ref.points.filter((q) => !q.date)) {
     const resolved = resolveSpot(p.lat, p.lon, index, overrides);
     assert.ok(resolved, `no station resolved for ${p.spot}`);
     const extremes = await getTides(loadFull(resolved.station), { start, end });

@@ -18,7 +18,9 @@ import { renderMap } from "./map.js";
 const INDEX_URL = "./data/stations.json";
 const MI_INDEX_URL = "./data/mi-stations.json";
 const EPA_INDEX_URL = "./data/epa-stations.json";
+const NI_INDEX_URL = "./data/ni-stations.json";
 const BEACHES_URL = "./data/beaches.json";
+const NI_BEACHES_URL = "./data/ni-beaches.json";
 const PLACES_URL = "./data/places.json";
 const OUTLINE_URL = "./data/ireland-outline.json";
 const LOWWATER_URL = "./data/low-water.json";
@@ -27,6 +29,7 @@ const MI_OVERLAP_KM = 3; // TICON/MI entries within this radius of a more-local 
 const stationUrl = (id) => `./data/stations/${id.replace(/\//g, "_")}.json`;
 const miStationUrl = (id) => `./data/mi/${id}.json`;
 const epaStationUrl = (id) => `./data/epa/${id}.json`;
+const niStationUrl = (id) => `./data/ni/${id.replace(/\//g, "_")}.json`;
 const LS_KEY = "rwb.selectedStationId";
 const LS_DAYS_KEY = "rwb.days";
 const LS_VIEW_KEY = "rwb.view";
@@ -57,12 +60,15 @@ const MAX_RESULTS = 50;
 // intended behaviour without extra complexity. If a future EPA node ever landed genuinely
 // farther from an overlap than its MI/TICON counterpart, this rule would need revisiting —
 // not observed in the current West Cork bbox.
-export function mergeStationIndexes(ticon, mi, epa = []) {
+export function mergeStationIndexes(ticon, mi, epa = [], ni = []) {
   const near = (a, b) => haversineKm({ lat: a.latitude, lon: a.longitude }, { lat: b.latitude, lon: b.longitude }) <= MI_OVERLAP_KM;
 
   const keptMi = mi.filter((m) => !epa.some((e) => near(m, e)));
-  const keptTicon = ticon.filter((t) => !epa.some((e) => near(t, e)) && !mi.some((m) => near(t, m)));
-  return [...epa, ...keptMi, ...keptTicon];
+  // NI harmonic gauges sit at the TICON tier but never overlap RoI sources (different coast),
+  // so in practice all are kept; the dedup guard is kept for symmetry.
+  const keptNi = ni.filter((n) => !epa.some((e) => near(n, e)) && !keptMi.some((m) => near(n, m)));
+  const keptTicon = ticon.filter((t) => !epa.some((e) => near(t, e)) && !mi.some((m) => near(t, m)) && !keptNi.some((n) => near(t, n)));
+  return [...epa, ...keptMi, ...keptNi, ...keptTicon];
 }
 
 let index = [];
@@ -118,18 +124,23 @@ async function loadIndex() {
     epa = [];
   }
 
-  index = mergeStationIndexes(ticon, mi, epa);
-
-  // Beaches are an optional enhancement layer — a missing/404 data/beaches.json (e.g. an
-  // older cached build, or the file simply not having been generated) must not break the
-  // rest of the app, so default to [] rather than letting the rejection/parse error
-  // propagate out of loadIndex/init.
+  let ni = [];
   try {
-    const res = await fetch(BEACHES_URL);
-    beaches = res.ok ? await res.json() : [];
+    const res = await fetch(NI_INDEX_URL);
+    ni = res.ok ? await res.json() : [];
   } catch {
-    beaches = [];
+    ni = [];
   }
+
+  index = mergeStationIndexes(ticon, mi, epa, ni);
+
+  // Beaches are an optional enhancement layer — a missing/404 file must not break init().
+  // The RoI (EPA) and NI (DAERA) beach registers merge into one search-alias layer.
+  const beachFetch = async (url) => {
+    try { const res = await fetch(url); return res.ok ? await res.json() : []; } catch { return []; }
+  };
+  const [roiBeaches, niBeaches] = await Promise.all([beachFetch(BEACHES_URL), beachFetch(NI_BEACHES_URL)]);
+  beaches = [...roiBeaches, ...niBeaches];
 
   // GeoNames coastal-place gazetteer — same optional-enhancement contract as beaches above.
   try {
@@ -173,7 +184,10 @@ async function loadIndex() {
 
 async function loadStation(entry) {
   const url =
-    entry.source === "epa" ? epaStationUrl(entry.id) : entry.source === "mi" ? miStationUrl(entry.id) : stationUrl(entry.id);
+    entry.source === "epa" ? epaStationUrl(entry.id)
+    : entry.source === "mi" ? miStationUrl(entry.id)
+    : entry.source === "ni" ? niStationUrl(entry.id)
+    : stationUrl(entry.id);
   return fetch(url).then((r) => r.json());
 }
 
@@ -263,8 +277,15 @@ export function stationSourceLabel(station) {
 // excluded entirely; the map only covers Ireland's bbox (data/ireland-outline.json), and the
 // 2400-entry gazetteer (beaches/places) is deliberately never plotted — text-search only, per
 // spec, since it would be far too dense. Pure, unit-tested.
+// Island-of-Ireland bbox: RoI + NI, excluding GB/IoM gauges just across the channel.
+const IRELAND_ISLAND_BBOX = { minLat: 51.2, maxLat: 55.5, minLon: -10.7, maxLon: -5.3 };
+function inIrelandIsland(s) {
+  return s.latitude >= IRELAND_ISLAND_BBOX.minLat && s.latitude <= IRELAND_ISLAND_BBOX.maxLat
+    && s.longitude >= IRELAND_ISLAND_BBOX.minLon && s.longitude <= IRELAND_ISLAND_BBOX.maxLon;
+}
+
 export function mapMarkerSources(index) {
-  const gauges = index.filter((s) => s.country === "Ireland" && s.source !== "epa");
+  const gauges = index.filter((s) => s.source !== "epa" && (s.country === "Ireland" || s.source === "ni" || inIrelandIsland(s)));
   const beachModel = index.filter((s) => s.source === "epa");
   return { gauges, beachModel };
 }

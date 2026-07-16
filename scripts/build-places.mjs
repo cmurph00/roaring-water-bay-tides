@@ -33,6 +33,13 @@ const GEONAMES_URL = "https://download.geonames.org/export/dump/IE.zip";
 const ZIP_PATH = "data/IE.zip";
 const TXT_PATH = "data/IE.txt";
 
+// Northern Ireland comes from the separate GeoNames GB dump (the IE dump has no NI rows at
+// all — NI is part of the UK in GeoNames' country model). Same public, no-registration
+// direct-download mechanism as the IE dump above.
+const GEONAMES_GB_URL = "https://download.geonames.org/export/dump/GB.zip";
+const GB_ZIP_PATH = "data/GB.zip";
+const GB_TXT_PATH = "data/GB.txt";
+
 // A place survives the gazetteer only if it sits within this of at least one real
 // prediction source (EPA node, MI station, or TICON Ireland station) — see
 // loadPredictionSources()/isNearAnySource() below. The task spec that motivated this script
@@ -114,6 +121,31 @@ export const COUNTY_BY_CODE = {
   "L.31": "Wicklow", "L.33": "Dublin", "L.34": "Dublin", "L.35": "Dublin", "L.39": "Dublin",
   "M.03": "Clare", "M.04": "Cork", "M.11": "Kerry", "M.26": "Tipperary", "M.27": "Waterford",
   "M.42": "Limerick", "M.44": "Waterford", "U.02": "Cavan", "U.06": "Donegal", "U.22": "Monaghan",
+  // Northern Ireland (GeoNames GB dump, admin1 "NIR"). VERIFIED against the real data/GB.txt:
+  // every populated-place row in NI uses the MODERN (2015 local-government-district reform)
+  // admin2 GSS code (N09000001-N09000011) — NOT a legacy 3-letter county abbreviation. Those
+  // legacy codes (ANT/DOW/etc, an earlier placeholder guess in this map) only ever appear as
+  // GeoNames `alternatenames` on the old pre-2015 ADM2H council-boundary rows themselves, never
+  // as a place's own admin2 value. Coastal counties only, mapped from real coastal-town rows
+  // spot-checked directly against data/GB.txt (Larne/Carrickfergus/Whitehead/Newtownabbey ->
+  // Antrim; Bangor/Donaghadee/Newcastle/Kilkeel/Annalong/Warrenpoint -> Down; Derry/Londonderry
+  // itself -> Londonderry). One district, "Causeway Coast and Glens" (N09000004), genuinely
+  // straddles historic Antrim (Portrush/Ballycastle/Bushmills/Cushendun) AND Londonderry
+  // (Portstewart/Coleraine/Limavady) coastal towns under a single modern code with no finer
+  // admin field to disambiguate (data/GB.txt carries no admin3/admin4 for any NI row) — mapped
+  // here to Antrim as the district's majority historic-county association ("Glens" = the
+  // Antrim Glens); Portstewart/Coleraine/Limavady are therefore tagged Antrim rather than their
+  // true historic Londonderry, a known coarse-grained limitation of LGD-code-based tagging, not
+  // a silent guess (flagged in DATA-SOURCES.md / task report). Inland-only districts (Fermanagh
+  // and Omagh, Mid Ulster, Armagh City/Banbridge/Craigavon, Lisburn and Castlereagh) and the
+  // historically-split City of Belfast are deliberately left unmapped (no coast, or too mixed
+  // to attribute to one of the three coastal counties).
+  "NIR.N09000001": "Antrim", // Antrim and Newtownabbey
+  "NIR.N09000004": "Antrim", // Causeway Coast and Glens (see note above — mixed, majority Antrim)
+  "NIR.N09000008": "Antrim", // Mid and East Antrim
+  "NIR.N09000005": "Londonderry", // Derry City and Strabane
+  "NIR.N09000010": "Down", // Newry, Mourne and Down
+  "NIR.N09000011": "Down", // Ards and North Down
 };
 
 // Resolves a parsed GeoNames row to its Irish county name, or null when the admin1.admin2 pair
@@ -237,19 +269,28 @@ async function readJsonOrEmpty(path) {
  * build-epa.mjs) + every already-published EPA node (data/epa-stations.json, kept for
  * robustness if that file ever contains entries outside the live bbox fetch) + every Marine
  * Institute station + every TICON station in Ireland (TICON covers all of Europe, but only
- * its Irish entries are a meaningful "nearby source" test for a GeoNames IE-only gazetteer).
- * Each optional/missing JSON file defaults to [] rather than failing the build — same
- * defensive contract as src/ui.js's loadIndex().
+ * its Irish entries are a meaningful "nearby source" test for a GeoNames IE-only gazetteer) +
+ * every Northern Ireland gauge (data/ni-stations.json — currently [] until a real NI source
+ * lands; see the project CLAUDE.md's NI-coverage task notes). TICON's Ireland filter is
+ * widened from a bare country-name check to the whole island-of-Ireland bbox (matching
+ * src/ui.js's map bbox) so its one NI-coast entry, Portrush, also counts as a source — without
+ * it every NI GeoNames place would be dropped as "no nearby prediction source" even though
+ * ni-stations.json is empty for now. Each optional/missing JSON file defaults to [] rather
+ * than failing the build — same defensive contract as src/ui.js's loadIndex().
  */
 async function loadPredictionSources() {
-  const [epaBboxNodes, epaIndex, mi, ticon] = await Promise.all([
+  const [epaBboxNodes, epaIndex, mi, ticon, ni] = await Promise.all([
     fetchBboxNodes(),
     readJsonOrEmpty("data/epa-stations.json"),
     readJsonOrEmpty("data/mi-stations.json"),
     readJsonOrEmpty("data/stations.json"),
+    readJsonOrEmpty("data/ni-stations.json"),
   ]);
-  const ticonIreland = ticon.filter((s) => s.country === "Ireland");
-  return [...epaBboxNodes, ...epaIndex, ...mi, ...ticonIreland];
+  // TICON: keep Irish entries (RoI gazetteer) AND the NI-coast entry Portrush so NI places
+  // near it survive the coastal filter. Island-of-Ireland bbox, matching src/ui.js.
+  const irelandIsland = (s) => s.latitude >= 51.2 && s.latitude <= 55.5 && s.longitude >= -10.7 && s.longitude <= -5.3;
+  const ticonRelevant = ticon.filter((s) => s.country === "Ireland" || irelandIsland(s));
+  return [...epaBboxNodes, ...epaIndex, ...mi, ...ticonRelevant, ...ni];
 }
 
 async function downloadAndExtract() {
@@ -261,6 +302,25 @@ async function downloadAndExtract() {
   await writeFile(ZIP_PATH, buf);
   await execFileAsync("unzip", ["-o", ZIP_PATH, "IE.txt", "-d", "data"]);
   return readFile(TXT_PATH, "utf8");
+}
+
+/**
+ * Downloads and extracts the GeoNames GB (Great Britain) dump, keeping only Northern Ireland
+ * rows (admin1 "NIR") — this is what makes Portrush/Portstewart/Bangor and the coastal Antrim/
+ * Down/Londonderry counties available (the IE dump above has no NI rows at all: NI is part of
+ * the UK in GeoNames' country model, not the Republic). Only the NI subset is kept in memory
+ * to avoid loading all of Great Britain (~2.9M rows) for the ~1,750 rows we actually need.
+ */
+async function downloadAndExtractGB() {
+  await mkdir("data", { recursive: true });
+  console.log("Downloading GeoNames GB dump (for Northern Ireland)...");
+  const res = await fetch(GEONAMES_GB_URL);
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} fetching ${GEONAMES_GB_URL}`);
+  await writeFile(GB_ZIP_PATH, Buffer.from(await res.arrayBuffer()));
+  await execFileAsync("unzip", ["-o", GB_ZIP_PATH, "GB.txt", "-d", "data"]);
+  const text = await readFile(GB_TXT_PATH, "utf8");
+  // Keep only Northern Ireland rows (admin1 = NIR) to avoid loading all of Great Britain.
+  return text.split("\n").filter((l) => l.split("\t")[10] === "NIR");
 }
 
 async function build() {
@@ -282,7 +342,16 @@ async function build() {
   }
 
   const lines = text.split("\n").filter((l) => l.trim().length > 0);
-  const candidates = lines.map(parseGeonamesLine).map(rowToPlace).filter((p) => p !== null);
+
+  let niLines = [];
+  try {
+    niLines = await downloadAndExtractGB();
+  } catch (err) {
+    console.error(`WARNING: GB dump download failed (${err.message}) — building RoI places only, no NI.`);
+  }
+
+  const allLines = [...lines, ...niLines];
+  const candidates = allLines.map(parseGeonamesLine).map(rowToPlace).filter((p) => p !== null);
   const coastal = candidates.filter((p) => isNearAnySource(p, sources));
   const places = dedupPlaces(coastal);
 
@@ -293,7 +362,7 @@ async function build() {
 
   await writeFile("data/places.json", JSON.stringify(places));
   console.log(
-    `Parsed ${lines.length} GeoNames IE rows; ${candidates.length} relevant (town/harbour/bay/...); ` +
+    `Parsed ${lines.length} GeoNames IE rows + ${niLines.length} GB/NI rows; ${candidates.length} relevant (town/harbour/bay/...); ` +
       `${coastal.length} within ${COASTAL_RADIUS_KM}km of a prediction source; ${places.length} after dedup. ` +
       `Wrote data/places.json.`
   );

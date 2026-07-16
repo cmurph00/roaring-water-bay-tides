@@ -36,14 +36,47 @@ Licenses present: cc-by-4.0.
   registered bathing beach or a GeoNames coastal place (town/harbour/bay/...); only
   genuinely offshore nodes are dropped. Regenerate via `node scripts/build-epa.mjs`.
 
+## Northern Ireland tide gauge (Bangor, derived harmonics)
+
+- **BODC UK Tide Gauge Network** (British Oceanographic Data Centre / NERC, Open Government
+  Licence) — https://www.bodc.ac.uk/data/hosted_data_systems/sea_level/uk_tide_gauge_network/ .
+  The Bangor (Co. Down) processed sea-level series from this network is the sole source for
+  `data/ni/bangor.json`'s tidal harmonic constituents: `scripts/derive-bangor-constituents.py`
+  fits them from the raw BODC series via `utide` (manual download only, no API — see the script
+  header for the exact processed-data URL; the raw series itself is gitignored source data, not
+  committed), so Bangor predicts fully offline exactly like the TICON/NOAA stations. **No
+  UKHO/Admiralty data of any kind is used anywhere in this app** — BODC gauge observations
+  (OGL, commercial-use-safe) are a different, unrelated data lineage from Admiralty
+  tide-table predictions (Crown Copyright, not redistributable), and the two are never mixed.
+  Regenerate via `python3 scripts/derive-bangor-constituents.py`; feeds `data/ni-stations.json`.
+
+## DAERA Northern Ireland bathing waters
+
+- **DAERA** (Department of Agriculture, Environment and Rural Affairs, Northern Ireland, Open
+  Government Licence) — via its ArcGIS FeatureServer bathing-waters open dataset
+  (https://opendata-daerani.hub.arcgis.com/). Covers NI's named registered bathing beaches,
+  used for beach names/locations only (`data/ni-beaches.json`) — same search-only-alias
+  contract as the EPA (Ireland) beaches above: tide predictions come from the app's nearest
+  real NI prediction station (Portrush or Bangor), not from DAERA data. Regenerate via
+  `node scripts/build-ni-beaches.mjs`.
+
 ## GeoNames coastal-place gazetteer
 
 - **GeoNames** (CC-BY-4.0) — https://www.geonames.org/ , via the Ireland country dump
-  (https://download.geonames.org/export/dump/IE.zip). This product uses data from
-  GeoNames. Covers 4539 named coastal places (towns, harbours, bays, coves,
+  (https://download.geonames.org/export/dump/IE.zip) and, for Northern Ireland, the Great
+  Britain country dump (https://download.geonames.org/export/dump/GB.zip, filtered to its
+  "NIR" admin1 rows — the IE dump carries no Northern Ireland rows at all). This product uses
+  data from GeoNames. Covers 4554 named coastal places (towns, harbours, bays, coves,
   islands, ...) within ~8km of a real tide-prediction source, used for search only —
   a place resolves to the nearest real prediction station (see src/ui.js), not to
-  GeoNames data. Regenerate via `node scripts/build-places.mjs`.
+  GeoNames data. NI places currently anchor off the single NI-coast TICON station
+  (Portrush) since `data/ni-stations.json` is still empty pending its own data source —
+  expect wider NI coverage (e.g. Bangor-area places) once that lands. NI counties (Antrim,
+  Down, Londonderry) are derived from each row's modern (2015 local-government-district
+  reform) admin2 GSS code, not a legacy county abbreviation — see `COUNTY_BY_CODE` in
+  `scripts/build-places.mjs` for the verified code map and its one known coarse-grained
+  limitation (the "Causeway Coast and Glens" district spans historic Antrim and Londonderry
+  under a single code). Regenerate via `node scripts/build-places.mjs`.
 
 ## Coastline + islands outline (offline SVG map picker)
 
