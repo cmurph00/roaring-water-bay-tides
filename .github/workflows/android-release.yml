@@ -59,7 +59,10 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon
+          # AAB for Play upload, plus a signed release APK for direct sideload testing —
+          # both run R8/minify (release build type), so the APK exercises the exact shipping
+          # config the AAB ships (unlike the debug APK, which is not minified).
+          ./gradlew bundleRelease assembleRelease --no-daemon
 
       - name: Remove decoded keystore
         if: always()
@@ -69,4 +72,10 @@ jobs:
         with:
           name: rwb-tides-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rwb-tides-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
