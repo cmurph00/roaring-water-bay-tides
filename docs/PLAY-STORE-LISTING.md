@@ -52,10 +52,15 @@ First release. Offline tide predictions for the Irish coast: nearest tide gauge 
 ## Graphic assets
 | Asset | Spec | Status |
 |---|---|---|
-| App icon | 512×512 PNG, 32-bit | `icons/icon-512.png` exists (basic mark — consider a nicer one) |
-| Feature graphic | 1024×500 PNG/JPG, no alpha | **TODO — required** |
-| Phone screenshots | 2–8, PNG/JPG, 16:9 or 9:16, min 320px side | **TODO** — capture: (1) tide table for a spot, (2) map zoomed to islands, (3) county filter / search. Light and/or dark. |
+| App icon | 512×512 PNG | ✅ `store-assets/icon-512.png` (also now the app's PWA icon in `icons/`) |
+| Feature graphic | 1024×500 PNG/JPG, no alpha | ✅ `store-assets/feature-graphic-1024x500.png` |
+| Phone screenshots | 2–8, PNG/JPG, 16:9 or 9:16, min 320px side | **TODO** — capture on device: (1) tide table for a spot, (2) map zoomed to islands, (3) county filter / search. Light and/or dark. |
 | Tablet screenshots | optional | skip for v1 |
+
+> Store graphics live in `store-assets/` (upload to the console from there). The app icon was also
+> applied to the PWA (`icons/icon-192.png` + `icons/icon-512.png`). The Android *launcher* icon
+> (res/mipmap-*) still uses the Capacitor default — regenerate later with
+> `npx @capacitor/assets generate --iconBackgroundColor '#0d2233'` if you want it to match.
 
 ## Store settings / rollout
 - **Countries:** Ireland at minimum (add UK + rest of world freely — the app is Ireland-only in content but harmless elsewhere).
