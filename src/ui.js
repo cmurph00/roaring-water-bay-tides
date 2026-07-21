@@ -11,6 +11,7 @@ import {
 import { getTides } from "./resolver.js";
 import { resolveSpot } from "./resolve-spot.js";
 import { applyCorrection } from "./correction.js";
+import { chartDatumOffset } from "./datum.js";
 import { fmtTime, fmtDistance, localDayISO, groupByLocalDay, fmtDayLabel } from "./format.js";
 import { initThemeToggle } from "./theme.js";
 import { renderMap } from "./map.js";
@@ -212,12 +213,22 @@ async function showStation(entry, distanceKm, locality) {
     .filter((g) => g.day >= todayKey)
     .slice(0, days);
 
+  // Normalise displayed heights to chart datum (the tide-table convention) so low waters read
+  // ~0 and highs show the real spring/neap range, matching what people expect (see src/datum.js).
+  // First call covers TICON (observed LAT datum) and MI/EPA (their full precomputed series);
+  // a harmonic gauge with no LAT datum (e.g. NI Bangor) approximates LAT from ~a year of prediction.
+  let chartOffset = chartDatumOffset(station);
+  if (!(station.datums && Number.isFinite(station.datums.LAT)) && !Array.isArray(station.tides)) {
+    const yrTides = await getTides(station, { start: new Date(now.getTime() - 366 * 24 * 3600 * 1000), end: now });
+    chartOffset = chartDatumOffset(station, yrTides);
+  }
+
   renderHeader(entry, distanceKm, station, locality);
   const emptyMessage =
     station.source === "mi" || station.source === "epa"
       ? "Marine Institute predictions cover 2026–2028. Pick a date in range."
       : "No tide data for this range.";
-  renderDays(groups, station.timezone, emptyMessage);
+  renderDays(groups, station.timezone, emptyMessage, chartOffset);
 
   // Collapse the picker so the tide table is the hero; the back bar re-opens List/Map.
   const backLabel = locality && locality !== entry.name ? `${locality} → ${entry.name}` : entry.name;
@@ -298,7 +309,9 @@ export function mapMarkerSources(index) {
 // "Baltimore → Union Hall (tide gauge, 19 km) · heights vs OD Malin".
 function renderHeader(entry, distanceKm, station, locality) {
   const el = document.getElementById("station-header");
-  const datum = `heights vs ${station.chart_datum ?? "chart datum"}`;
+  // Heights are normalised to chart datum for display (see src/datum.js) — exact for TICON
+  // (observed LAT datum), approximate for MI/EPA/NI, so label it "approx." to stay honest.
+  const datum = "heights ≈ chart datum";
   const type = stationSourceLabel(station);
   const dist = distanceKm != null ? `, ${fmtDistance(distanceKm)}` : "";
   if (locality && locality !== entry.name) {
@@ -308,7 +321,7 @@ function renderHeader(entry, distanceKm, station, locality) {
   el.textContent = `${entry.name}, ${entry.county || entry.country} (${type}${dist}) · ${datum}`;
 }
 
-function renderTideTable(tides, timezone) {
+function renderTideTable(tides, timezone, chartOffset = 0) {
   const table = document.createElement("table");
   for (const t of tides) {
     const row = document.createElement("tr");
@@ -316,13 +329,13 @@ function renderTideTable(tides, timezone) {
     row.innerHTML =
       `<td>${isHigh ? "▲ High" : "▼ Low"}</td>` +
       `<td class="time">${fmtTime(t.time, timezone)}</td>` +
-      `<td class="height">${t.height.toFixed(2)} m</td>`;
+      `<td class="height">${(t.height + chartOffset).toFixed(2)} m</td>`;
     table.appendChild(row);
   }
   return table;
 }
 
-function renderDays(groups, timezone, emptyMessage = "No tide data for this range.") {
+function renderDays(groups, timezone, emptyMessage = "No tide data for this range.", chartOffset = 0) {
   const container = document.getElementById("results");
   container.innerHTML = "";
   if (!groups.length) {
@@ -338,7 +351,7 @@ function renderDays(groups, timezone, emptyMessage = "No tide data for this rang
     head.innerHTML = `<span>${fmtDayLabel(g.day, timezone)}</span><span class="range">${g.day}</span>`;
     dayEl.appendChild(head);
 
-    dayEl.appendChild(renderTideTable(g.tides, timezone));
+    dayEl.appendChild(renderTideTable(g.tides, timezone, chartOffset));
     container.appendChild(dayEl);
   }
 }
