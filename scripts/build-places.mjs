@@ -206,17 +206,32 @@ export function altNamesForRow(row, { max = 6 } = {}) {
  * name/coordinate pair. `alt` is present only when there's at least one alternate name worth
  * keeping (see altNamesForRow). Pure/no I/O, directly unit-testable.
  */
+// Curated display-name overrides for places whose GeoNames name isn't the locally-recognised
+// one (or collides with a same-named place elsewhere). Keyed `${geonamesName}|${county}`. The
+// original GeoNames name is kept as a searchable alt so both spellings still resolve.
+export const NAME_OVERRIDES = {
+  // Roaring Water Bay island — OSi/GeoNames call it "Hare Island"; locally it's "Heir Island".
+  // Show both (and it disambiguates from Galway Bay's Hare Island, which the county label handles).
+  "Hare Island|Cork": "Hare / Heir Island",
+};
+
 export function rowToPlace(row) {
   const kind = kindForRow(row);
   if (!kind) return null;
   if (typeof row.name !== "string" || row.name.trim().length === 0) return null;
   if (!Number.isFinite(row.latitude) || !Number.isFinite(row.longitude)) return null;
 
-  const place = { name: row.name, latitude: row.latitude, longitude: row.longitude, kind };
-  if (row.population > 0) place.pop = row.population;
   const county = countyForRow(row);
+  const displayName = (county && NAME_OVERRIDES[`${row.name}|${county}`]) || row.name;
+
+  const place = { name: displayName, latitude: row.latitude, longitude: row.longitude, kind };
+  if (row.population > 0) place.pop = row.population;
   if (county) place.county = county;
   const alt = altNamesForRow(row);
+  // Keep the original GeoNames name searchable when we've overridden the display name.
+  if (displayName !== row.name && !alt.some((a) => a.toLowerCase() === row.name.toLowerCase())) {
+    alt.unshift(row.name);
+  }
   if (alt.length > 0) place.alt = alt;
   return place;
 }

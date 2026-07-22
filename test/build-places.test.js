@@ -11,6 +11,7 @@ import {
   isNearAnySource,
   placeDedupKey,
   dedupPlaces,
+  NAME_OVERRIDES,
 } from "../scripts/build-places.mjs";
 
 // --- parseGeonamesLine -------------------------------------------------------
@@ -143,6 +144,28 @@ test("rowToPlace omits `alt` entirely when there are no alternate names to keep"
     featureCode: "CAPE",
   };
   assert.deepEqual(rowToPlace(row), { name: "Cape Clear", latitude: 51.42556, longitude: -9.51889, kind: "cape" });
+});
+
+test("rowToPlace applies a curated NAME_OVERRIDE and keeps the original name searchable as alt", () => {
+  // Roaring Water Bay island: GeoNames "Hare Island" in Cork -> displayed "Hare / Heir Island",
+  // disambiguating from Galway Bay's Hare Island (which the county label handles).
+  assert.equal(NAME_OVERRIDES["Hare Island|Cork"], "Hare / Heir Island");
+  const row = {
+    name: "Hare Island", asciiname: "Hare Island", alternatenames: "Heir Island,Inishdriscol",
+    latitude: 51.49583, longitude: -9.43333, featureClass: "T", featureCode: "ISL", admin1: "M", admin2: "04",
+  };
+  const place = rowToPlace(row);
+  assert.equal(place.name, "Hare / Heir Island");
+  assert.equal(place.county, "Cork");
+  assert.ok(place.alt.includes("Hare Island"), "original GeoNames name kept as a searchable alt");
+});
+
+test("rowToPlace leaves a same-named place in a different county unchanged (no override)", () => {
+  // Galway Bay's Hare Island has no override — only the county label distinguishes it.
+  const row = { name: "Hare Island", asciiname: "Hare Island", alternatenames: "", latitude: 53.25806, longitude: -9.02111, featureClass: "T", featureCode: "ISL", admin1: "C", admin2: "10" };
+  const place = rowToPlace(row);
+  assert.equal(place.name, "Hare Island");
+  assert.equal(place.county, "Galway");
 });
 
 test("rowToPlace returns null for an irrelevant feature code", () => {

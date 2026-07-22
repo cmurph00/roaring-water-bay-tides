@@ -430,7 +430,9 @@ function renderStationList(stations, beachResults = [], placeResults = []) {
   }
   for (const p of placeResults.slice(0, MAX_RESULTS)) {
     const li = document.createElement("li");
-    li.textContent = `📍 ${p.name}`;
+    // Append the county so same-named places disambiguate (e.g. "Hare Island, Galway" vs
+    // "Hare / Heir Island, Cork") — several island/townland names recur around the coast.
+    li.textContent = p.county ? `📍 ${p.name}, ${p.county}` : `📍 ${p.name}`;
     wireLocalityClick(li, p, "Couldn't find a nearby tide gauge for this place.");
     list.appendChild(li);
   }
