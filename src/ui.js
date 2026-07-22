@@ -32,6 +32,10 @@ const miStationUrl = (id) => `./data/mi/${id}.json`;
 const epaStationUrl = (id) => `./data/epa/${id}.json`;
 const niStationUrl = (id) => `./data/ni/${id.replace(/\//g, "_")}.json`;
 const LS_KEY = "rwb.selectedStationId";
+// The page heading brand, shown on the picker screen and restored when leaving a station. In
+// station view the h1 is repurposed to show the user's chosen place (e.g. "Baltimore") — see
+// renderHeader/expandPicker. Matches index.html's static h1 ("Ireland's Tides", curly apostrophe).
+const BRAND = "Ireland’s Tides";
 const LS_DAYS_KEY = "rwb.days";
 const LS_VIEW_KEY = "rwb.view";
 const VALID_DAY_COUNTS = [1, 3, 5, 7, 10];
@@ -193,7 +197,10 @@ async function loadStation(entry) {
 }
 
 async function showStation(entry, distanceKm, locality) {
-  localStorage.setItem(LS_KEY, entry.id);
+  // Persist the whole selection — station id AND the user's chosen place + distance — so a
+  // reload restores "Baltimore (via Union Hall)" rather than the raw gauge, keeping the user's
+  // context. (Old builds stored a bare id string; the restore path in init() tolerates both.)
+  localStorage.setItem(LS_KEY, JSON.stringify({ id: entry.id, locality: locality ?? null, distanceKm: distanceKm ?? null }));
   const station = await loadStation(entry);
   currentSelection = { entry, distanceKm, locality };
 
@@ -230,9 +237,10 @@ async function showStation(entry, distanceKm, locality) {
       : "No tide data for this range.";
   renderDays(groups, station.timezone, emptyMessage, chartOffset);
 
-  // Collapse the picker so the tide table is the hero; the back bar re-opens List/Map.
-  const backLabel = locality && locality !== entry.name ? `${locality} → ${entry.name}` : entry.name;
-  collapsePicker(backLabel);
+  // Collapse the picker so the tide table is the hero; the back bar re-opens List/Map. The bar
+  // shows the chosen place (the gauge mapping lives in the header subtitle now), so it reads
+  // "‹ Baltimore" — a clear "change location" affordance without repeating the source.
+  collapsePicker(locality || entry.name);
 }
 
 // Once a spot is chosen, hide the List/Map picker + shrink the page header (via `.station-view` on
@@ -244,7 +252,16 @@ function collapsePicker(label) {
 
 // Restore the full header + List/Map picker (back-bar tap), re-showing whichever view was active.
 function expandPicker() {
+  const h1 = document.querySelector("header h1");
+  if (h1) h1.textContent = BRAND; // restore the app title when returning to the picker
   document.querySelector(".wrap").classList.remove("station-view");
+  // Default the reopened picker to the current selection's area: pre-select its county and list
+  // that county's stations, so the user lands focused on where they are (not a blank picker).
+  const county = currentSelection?.entry?.county;
+  if (county) {
+    setCountyFilter(county);
+    renderStationList(filterByCounty(index, county));
+  }
   setView(getStoredView());
 }
 
@@ -308,17 +325,25 @@ export function mapMarkerSources(index) {
 // the numbers, e.g. "Baltimore → Tragumna (beach model, 8 km) · heights vs Model MSL" or
 // "Baltimore → Union Hall (tide gauge, 19 km) · heights vs OD Malin".
 function renderHeader(entry, distanceKm, station, locality) {
+  // The chosen PLACE is the hero identity (h1) — e.g. a user who searched "Baltimore" keeps
+  // "Baltimore", not the gauge it maps to. The gauge/source is demoted to the subtitle so the
+  // user understands where the numbers come from without losing their own context.
+  const h1 = document.querySelector("header h1");
+  if (h1) h1.textContent = locality || entry.name;
+
   const el = document.getElementById("station-header");
   // Heights are normalised to chart datum for display (see src/datum.js) — exact for TICON
-  // (observed LAT datum), approximate for MI/EPA/NI, so label it "approx." to stay honest.
+  // (observed LAT datum), approximate for MI/EPA/NI, so label it "≈" to stay honest.
   const datum = "heights ≈ chart datum";
   const type = stationSourceLabel(station);
   const dist = distanceKm != null ? `, ${fmtDistance(distanceKm)}` : "";
   if (locality && locality !== entry.name) {
-    el.textContent = `${locality} → ${entry.name} (${type}${dist}) · ${datum}`;
-    return;
+    // Chosen place differs from the underlying gauge → show it as the source: "via Union Hall …".
+    el.textContent = `via ${entry.name} ${type}${dist} · ${datum}`;
+  } else {
+    // User picked the gauge itself → h1 already shows its name; subtitle carries county + source.
+    el.textContent = `${entry.county || entry.country} · ${type}${dist} · ${datum}`;
   }
-  el.textContent = `${entry.name}, ${entry.county || entry.country} (${type}${dist}) · ${datum}`;
 }
 
 function renderTideTable(tides, timezone, chartOffset = 0) {
@@ -591,12 +616,24 @@ export async function init() {
   document.getElementById("use-location").addEventListener("click", useMyLocation);
   document.getElementById("picker-back").addEventListener("click", expandPicker);
 
-  const savedId = localStorage.getItem(LS_KEY);
-  const saved = index.find((s) => s.id === savedId);
+  // Restore the persisted selection. New builds store JSON {id, locality, distanceKm}; tolerate
+  // an old bare-id string too. Re-showing with the saved locality keeps the "Baltimore (via
+  // Union Hall)" context across reloads instead of dropping back to the raw gauge name.
+  const savedRaw = localStorage.getItem(LS_KEY);
+  let savedSel = null;
+  if (savedRaw) {
+    try {
+      const parsed = JSON.parse(savedRaw);
+      savedSel = typeof parsed === "string" ? { id: parsed, locality: null, distanceKm: null } : parsed;
+    } catch {
+      savedSel = { id: savedRaw, locality: null, distanceKm: null };
+    }
+  }
+  const saved = savedSel && index.find((s) => s.id === savedSel.id);
   if (saved) {
     setCountyFilter(saved.county);
     try {
-      await showStation(saved, null);
+      await showStation(saved, savedSel.distanceKm, savedSel.locality);
     } catch {
       renderError("Couldn't load that station offline — pick one you've viewed before, or reconnect.");
     }
