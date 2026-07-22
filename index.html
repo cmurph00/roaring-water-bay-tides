@@ -23,6 +23,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Ireland's Tides</title>
 <link rel="manifest" href="./manifest.webmanifest" />
+<!-- iOS "Add to Home Screen" support: iOS ignores the manifest icon for the home-screen icon
+     and needs an explicit apple-touch-icon, plus these metas for a full-screen standalone launch
+     and a themed status bar. Lets the app install cleanly from Safari with no App Store / build. -->
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="RWB Tides" />
+<meta name="theme-color" content="#f6efe1" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0a1c29" media="(prefers-color-scheme: dark)" />
 <style>
   /* Self-hosted OFL webfonts (downloaded by scripts/fetch-fonts.py into ./fonts/) so the app
      renders correctly OFFLINE — no runtime CDN fetch, no third-party IP leak. All SIL OFL 1.1.
